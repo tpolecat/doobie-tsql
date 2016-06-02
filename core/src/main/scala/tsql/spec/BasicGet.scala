@@ -2,20 +2,20 @@ package tsql.spec
 
 import tsql.spec.JdbcType._
 import java.sql.ResultSet
+import scalaz.Coyoneda
 
-trait BasicGet[J <: JdbcType, A] { outer =>
+/** 
+ * Witness that a column of JcbcType `J` can be read into Scala type `A`. From such a value we can
+ * derive otherwise unconstrained `Read` instances.
+ */
+final case class BasicGet[J <: JdbcType, A](run: Coyoneda[(ResultSet, Int) => ?, A]) { outer =>
 
-  def unsafeRead(rs: ResultSet, n: Int): A
+  def map[B](f: A => B): BasicGet[J, B] =
+    BasicGet[J, B](run.map(f))
 
-  /** BasicGet.Array.narrow[Witness.`"_int4"`.T] */
-  def narrow[S <: String with Singleton]: AdvancedGet[J, S, A] =
-    new AdvancedGet[J, S, A] {
-      type I = A
-      val basic = outer
-      val ia: I => A = identity
-    }
-
-  // TODO: map
+  /** Construct an `AdvancedGet` by adding a schema constraint. */
+  def narrow[S <: String]: AdvancedGet[J, S, A] =
+    AdvancedGet(run)
 
 }
 
@@ -28,10 +28,8 @@ object BasicGet {
     new InstancePartiallyApplied[J]
 
   final class InstancePartiallyApplied[J <: JdbcType] {
-    def apply[A](unsafeGet: (ResultSet, Int) => A): BasicGet[J, A] =
-      new BasicGet[J, A] {
-        def unsafeRead(rs: ResultSet, n: Int): A = unsafeGet(rs, n)
-      }
+    def apply[A](pget0: (ResultSet, Int) => A): BasicGet[J, A] =
+      BasicGet(Coyoneda.lift[(ResultSet, Int) => ?, A](pget0))
   }
 
   // The JDBC Specification for reading basic types.

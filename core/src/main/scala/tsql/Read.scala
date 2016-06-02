@@ -4,37 +4,27 @@ import doobie.imports.{ FRS, ResultSetIO }
 import java.sql.ResultSet
 import shapeless.{ HNil, HList, ::, Lazy, Generic }
 import tsql.spec._
+import tsql.spec.ColumnNullable._
+import scalaz.Coyoneda
 
 // @annotation.implicitNotFound("Can't map output columns to Scala type ${A}. Please ensure that type, arity, and nullity match up with the following fancy type: ${M}")
-trait Read[M, A] { outer =>
-
-  protected type I
-  protected val ia: I => A
-  protected val pget: (ResultSet, Int) => I
+final case class Read[M, A](run: Coyoneda[(ResultSet, Int) => ?, A]) {
 
   def map[B](f: A => B): Read[M, B] =
-    new Read[M, B] {
-      type I = outer.I
-      val ia = outer.ia andThen f
-      val pget = outer.pget
-    }
+    new Read(run.map(f))
 
   def read(n: Int): ResultSetIO[A] =
     FRS.raw(unsafeRead(_, n))
 
   def unsafeRead(rs: ResultSet, n: Int): A =
-    ia(pget(rs, n))
+    run.k(run.fi(rs, n))
 
 }
 
 object Read extends ReadDerivations {
 
-  def instance[M, A](pget0: (ResultSet, Int) => A): Read[M, A] =
-    new Read[M, A] {
-      type I = A
-      val ia: I => A = identity
-      val pget = pget0
-    }
+  def instance[M, A](fi: (ResultSet, Int) => A): Read[M, A] =
+    new Read(Coyoneda.lift[(ResultSet, Int) => ?, A](fi))
 
 }
 
@@ -42,30 +32,34 @@ trait ReadDerivations extends ReadDerivations0 {
 
   implicit def basicGetInstance[J <: JdbcType, S, C, A](
     implicit ev: BasicGet[J, A]
-  ): Read[ColumnMeta[J, S, ColumnNullable.NoNulls, C], A] =
-    Read.instance[ColumnMeta[J, S, ColumnNullable.NoNulls, C], A](ev.unsafeRead)
+  ): Read[ColumnMeta[J, S, NoNulls, C], A] =
+    Read[ColumnMeta[J, S, NoNulls, C], A](ev.run)
 
   implicit def basicGetInstanceOp[J <: JdbcType, S, N <: ColumnNullable, C, A](
     implicit ev: BasicGet[J, A]
   ): Read[ColumnMeta[J, S, N, C], Option[A]] =
-    Read.instance[ColumnMeta[J, S, N, C], Option[A]] { (rs, n) =>
-      val a = ev.unsafeRead(rs, n)
-      if (rs.wasNull) None else Some(a)
+    Read[ColumnMeta[J, S, N, C], Option[A]] {
+      Coyoneda.lift[(ResultSet, Int) => ?, Option[A]] { (rs: ResultSet, n: Int) =>
+        val c = ev.run
+        val i = c.fi(rs, n)
+        if (rs.wasNull) None else Some(c.k(i))
+      }
     }
 
   implicit def advancedGetInstance[J <: JdbcType, S <: String with Singleton, C, A](
     implicit ev: AdvancedGet[J, S, A]
-  ): Read[ColumnMeta[J, S, ColumnNullable.NoNulls, C], A] =
-    Read.instance[ColumnMeta[J, S, ColumnNullable.NoNulls, C], A] { (rs, n) =>
-      ev.ia(ev.basic.unsafeRead(rs, n))
-    }
+  ): Read[ColumnMeta[J, S, NoNulls, C], A] =
+    Read[ColumnMeta[J, S, NoNulls, C], A](ev.run)
 
   implicit def advancedGetInstanceOp[J <: JdbcType, S <: String with Singleton, N <: ColumnNullable, C, A](
     implicit ev: AdvancedGet[J, S, A]
   ): Read[ColumnMeta[J, S, N, C], Option[A]] =
-    Read.instance[ColumnMeta[J, S, N, C], Option[A]] { (rs, n) =>
-      val i = ev.basic.unsafeRead(rs, n)
-      if (rs.wasNull) None else Some(ev.ia(i))
+    Read[ColumnMeta[J, S, N, C], Option[A]] {
+      Coyoneda.lift[(ResultSet, Int) => ?, Option[A]] { (rs: ResultSet, n: Int) =>
+        val c = ev.run
+        val i = c.fi(rs, n)
+        if (rs.wasNull) None else Some(c.k(i))
+      }
     }
 
 }
@@ -74,9 +68,9 @@ trait ReadDerivations0 extends ReadDerivations1 {
 
   // If we can do a single-column get with NoNull we can also do it for NullableUnknown.
   implicit def unknownNullGet[J <: JdbcType, S <: String with Singleton, C, A](
-    implicit r: Read[ColumnMeta[J, S, ColumnNullable.NoNulls, C], A]
-  ): Read[ColumnMeta[J, S, ColumnNullable.NullableUnknown, C], A] =
-    Read.instance[ColumnMeta[J, S, ColumnNullable.NullableUnknown, C], A](r.unsafeRead)
+    implicit r: Read[ColumnMeta[J, S, NoNulls, C], A]
+  ): Read[ColumnMeta[J, S, NullableUnknown, C], A] =
+    Read[ColumnMeta[J, S, NullableUnknown, C], A](r.run)
 
 }
 
