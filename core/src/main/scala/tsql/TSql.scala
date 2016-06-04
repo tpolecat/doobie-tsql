@@ -8,6 +8,7 @@ import macrocompat.bundle
 import doobie.imports._
 import scalaz._, Scalaz._, scalaz.effect.IO
 import java.sql.ResultSetMetaData._
+import JdbcType._
 
 final case class TSql[I, O](sql: String) {
   def list[A](implicit ev: Read[O, A]): ConnectionIO[List[A]] = // no params yet
@@ -24,49 +25,7 @@ object TSql {
 
   @bundle
   class TSqlMacros(val c: Context) {
-    import JdbcType._
     import c.universe._
-    import doobie.enum.nullability._
-
-    // TBD: derive this on the fly; I just don't know how to do it
-    val jdbcTypeMap = Map[Int, Type](
-      JdbcType.valueOf[JdbcArray]         -> typeOf[JdbcArray],
-      JdbcType.valueOf[JdbcBigInt]        -> typeOf[JdbcBigInt],
-      JdbcType.valueOf[JdbcBinary]        -> typeOf[JdbcBinary],
-      JdbcType.valueOf[JdbcBit]           -> typeOf[JdbcBit],
-      JdbcType.valueOf[JdbcBlob]          -> typeOf[JdbcBlob],
-      JdbcType.valueOf[JdbcBoolean]       -> typeOf[JdbcBoolean],
-      JdbcType.valueOf[JdbcChar]          -> typeOf[JdbcChar],
-      JdbcType.valueOf[JdbcClob]          -> typeOf[JdbcClob],
-      JdbcType.valueOf[JdbcDataLink]      -> typeOf[JdbcDataLink],
-      JdbcType.valueOf[JdbcDate]          -> typeOf[JdbcDate],
-      JdbcType.valueOf[JdbcDecimal]       -> typeOf[JdbcDecimal],
-      JdbcType.valueOf[JdbcDistinct]      -> typeOf[JdbcDistinct],
-      JdbcType.valueOf[JdbcDouble]        -> typeOf[JdbcDouble],
-      JdbcType.valueOf[JdbcFloat]         -> typeOf[JdbcFloat],
-      JdbcType.valueOf[JdbcInteger]       -> typeOf[JdbcInteger],
-      JdbcType.valueOf[JdbcJavaObject]    -> typeOf[JdbcJavaObject],
-      JdbcType.valueOf[JdbcLongnVarChar]  -> typeOf[JdbcLongnVarChar],
-      JdbcType.valueOf[JdbcLongVarBinary] -> typeOf[JdbcLongVarBinary],
-      JdbcType.valueOf[JdbcLongVarChar]   -> typeOf[JdbcLongVarChar],
-      JdbcType.valueOf[JdbcNChar]         -> typeOf[JdbcNChar],
-      JdbcType.valueOf[JdbcNClob]         -> typeOf[JdbcNClob],
-      JdbcType.valueOf[JdbcNull]          -> typeOf[JdbcNull],
-      JdbcType.valueOf[JdbcNumeric]       -> typeOf[JdbcNumeric],
-      JdbcType.valueOf[JdbcNVarChar]      -> typeOf[JdbcNVarChar],
-      JdbcType.valueOf[JdbcOther]         -> typeOf[JdbcOther],
-      JdbcType.valueOf[JdbcReal]          -> typeOf[JdbcReal],
-      JdbcType.valueOf[JdbcRef]           -> typeOf[JdbcRef],
-      JdbcType.valueOf[JdbcRowId]         -> typeOf[JdbcRowId],
-      JdbcType.valueOf[JdbcSmallInt]      -> typeOf[JdbcSmallInt],
-      JdbcType.valueOf[JdbcSqlXml]        -> typeOf[JdbcSqlXml],
-      JdbcType.valueOf[JdbcStruct]        -> typeOf[JdbcStruct],
-      JdbcType.valueOf[JdbcTime]          -> typeOf[JdbcTime],
-      JdbcType.valueOf[JdbcTimestamp]     -> typeOf[JdbcTimestamp],
-      JdbcType.valueOf[JdbcTinyInt]       -> typeOf[JdbcTinyInt],
-      JdbcType.valueOf[JdbcVarBinary]     -> typeOf[JdbcVarBinary],
-      JdbcType.valueOf[JdbcVarChar]       -> typeOf[JdbcVarChar]
-    )
 
     def setting(s: String, example: String): String =
       c.settings
@@ -101,28 +60,29 @@ object TSql {
       val Literal(Constant(sqlString: String)) = sql
 
       // Get column and parameter metadata
-      val prog = HC.prepareStatement(sqlString)(columnMeta tuple HPS.getParameterJdbcMeta)
+      val prog = HC.prepareStatement(sqlString)(columnMeta tuple parameterMeta)
       val (cm, pm) = prog.transact(xa).attemptSql.unsafePerformIO match {
         case -\/(e) => c.abort(c.enclosingPosition, e.getMessage)
         case \/-(d) => d
       }
 
-      // final case class ParameterMeta(jdbcType: JdbcType, vendorTypeName: String, nullability: Nullability, mode: ParameterMode) 
+      // Compute the input type
+      val itype = packHList(pm.map {
+        case (j, sch, n, m) =>
+          c.typecheck(tq"ParameterMeta[$j, $sch, ${toType(n)}, $m]", c.TYPEmode).tpe
+      })
 
-      // // Compute the input type
-      // val itype = packHList(pm.map {
-      //   case doobie.util.analysis.ParameterMeta(j, sch, n, m) =>
-      //     c.typecheck(tq"(${jdbcTypeMap(j.toInt)}, $sch, ${toType(n)})", c.TYPEmode).tpe
-      // })
+      def singleton[A: Liftable](a: A): Type =
+        c.typecheck(tq"$a").tpe
 
       // Compute the output type
       val otype  = packHList(cm.map {
         case (j, sch, n, t, col) => 
-          c.typecheck(tq"ColumnMeta[${jdbcTypeMap(j.toInt)}, $sch, ${toType(n)}, $t, $col]", c.TYPEmode).tpe
+          c.typecheck(tq"ColumnMeta[$j, $sch, ${toType(n)}, $t, $col]", c.TYPEmode).tpe
       })
 
       // Done!
-      q"new TSql[shapeless.HNil, $otype]($sql)"
+      q"new TSql[$itype, $otype]($sql)"
 
     }
 
@@ -140,6 +100,19 @@ object TSql {
           }      
       }
 
+
+    val parameterMeta: PreparedStatementIO[List[(Int, String, Int, Int)]] =
+      FPS.getParameterMetaData.map { 
+        case null => Nil
+        case md   =>
+          (1 to md.getParameterCount).toList.map { i =>
+            val j = md.getParameterType(i)
+            val s = md.getParameterTypeName(i)
+            val n = md.isNullable(i)
+            val m = md.getParameterMode(i)
+            (j, s, n, m)
+          }      
+      }
   }
 
 }

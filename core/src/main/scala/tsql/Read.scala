@@ -29,14 +29,14 @@ object Read extends ReadDerivations with ReadInstances {
     new Read(Coyoneda.lift[(ResultSet, Int) => ?, A](f))
 
   /** Construct a single-column Read asserting conformance with ColumnMeta[J, *, NoNulls]. */
-  def basic[J <: JdbcType] = new BasicPartiallyApplied[J]
-  class BasicPartiallyApplied[J <: JdbcType] {
+  def basic[J <: Int] = new BasicPartiallyApplied[J]
+  class BasicPartiallyApplied[J <: Int] {
     def apply[A](f: (ResultSet, Int) => A): Read[ColumnMeta[J, String, NoNulls, String, String], A] =
       lift(f)
   }
 
   /** Construct a single-column Read asserting conformance with ColumnMeta[J, S, NoNulls]. */
-  def advanced[J <: JdbcType, S <: String, A](f: (ResultSet, Int) => A): Read[ColumnMeta[J, S, NoNulls, String, String], A] =
+  def advanced[J <: Int, S <: String, A](f: (ResultSet, Int) => A): Read[ColumnMeta[J, S, NoNulls, String, String], A] =
     lift(f)
 
 }
@@ -47,7 +47,7 @@ trait ReadDerivations {
   // coyoneda encoding allows us to do the initial column read and immediately stop if it was null,
   // rather than requiring that the continuation understand how to deal with it. This is the only
   // tricky bit.
-  implicit def option[J <: JdbcType, S <: String, T <: String, C <: String, A](
+  implicit def option[J <: Int, S <: String, T <: String, C <: String, A](
     implicit ev: Read[ColumnMeta[J, S, NoNulls, T, C], A],
              no: A <:!< Option[X] forSome { type X }
   ): Read[ColumnMeta[J, S, Nullity, T, C], Option[A]] =

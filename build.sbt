@@ -8,7 +8,7 @@ val ammSettings = Seq(
       "ammonite.repl.Main", 
       Attributed.data((fullClasspath in Test).value), {
         val opts = scalacOptions.value.mkString("List(\"", "\",\"", "\")")
-        List("-p", s"compiler.settings.processArguments($opts, true)")
+        List("-p", s"compiler.settings.processArguments($opts, true)\n${initialCommands.value}")
       },
       streams.value.log
   ))
@@ -41,7 +41,7 @@ lazy val commonSettings = Seq(
 
 lazy val root = project.in(file("."))
   .settings(buildSettings)
-  .aggregate(core, example)
+  .aggregate(core, example, ammonite)
 
 lazy val core = project.in(file("core"))
   .settings(buildSettings)
@@ -56,6 +56,14 @@ lazy val core = project.in(file("core"))
     addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
   )
 
+lazy val ammonite = project.in(file("ammonite"))
+  .settings(buildSettings)
+  .settings(commonSettings)
+  .settings(
+    libraryDependencies += "com.lihaoyi" % "ammonite-repl" % "0.5.9-SNAPSHOT" cross CrossVersion.full
+  )
+  .dependsOn(core)
+
 lazy val example = project.in(file("example"))
   .settings(buildSettings)
   .settings(commonSettings)
@@ -68,7 +76,10 @@ lazy val example = project.in(file("example"))
     ),
     libraryDependencies ++= Seq(
       "org.tpolecat"  %% "doobie-contrib-postgresql" % "0.2.3"
-    )
+    ),
+    initialCommands := s"""
+      |import tsql._, tsql.amm._, scalaz._, Scalaz._, doobie.imports._, shapeless._
+      |""".stripMargin
   )
-  .dependsOn(core)
+  .dependsOn(core, ammonite)
 
