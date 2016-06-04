@@ -7,7 +7,6 @@ import scalaz._, Scalaz._, scalaz.effect.IO
 object first {
 
   import tsql._
-  import tsql.spec._
 
   val xa = DriverManagerTransactor[IO](
     "org.postgresql.Driver",
@@ -16,24 +15,32 @@ object first {
     ""
   )
 
-  implicit val IntArray: AdvancedGet[JdbcType.JdbcArray, Witness.`"_int4"`.T, Array[Int]] =
-    BasicGet.Array.narrow[Witness.`"_int4"`.T].map { a =>
-      a.getArray.asInstanceOf[Array[Integer]].map(_.intValue)
+  implicit val IntArray =
+    Read.advanced[JdbcType.JdbcArray, Witness.`"_int4"`.T, Array[Int]] { (rs, n) =>
+      rs.getArray(n).getArray.asInstanceOf[Array[Integer]].map(_.intValue)
+    }
+
+  implicit val StringArray =
+    Read.advanced[JdbcType.JdbcArray, Witness.`"_text"`.T, Array[String]] { (rs, n) =>
+      rs.getArray(n).getArray.asInstanceOf[Array[String]]
     }
 
   def main(args: Array[String]): Unit = {
 
     val q = tsql"""
-      SELECT name, population, 42, ARRAY[1, 2, 3]
+      SELECT name, population, 42, ARRAY['x', 'y']
       FROM   country
     """
 
 
-    val cio = q.list[String :: Long :: Int :: Array[Int] :: HNil]
+    val cio1 = q.list[String :: Long :: Int :: Array[String] :: HNil]
+    val cio2 = q.list[(String, Long, Int, Array[String])]
 
-    val prog = cio.transact(xa).flatMap(as => as.map(_.toString).traverse(IO.putStrLn))
+    // tsql"select 1".list[Int] // not yet
 
-    prog.unsafePerformIO
+    // val prog = cio.transact(xa).flatMap(as => as.map(_.toString).traverse(IO.putStrLn))
+
+    // prog.unsafePerformIO
 
     // q.as[(String, Int, Option[Int])]
     // q.as[Boo]

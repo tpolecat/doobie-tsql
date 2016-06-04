@@ -1,6 +1,9 @@
 package tsql
 
-import spec._
-
 trait ColumnMeta[
-  J <: JdbcType, S, N <: ColumnNullable, C]
+  -J <: JdbcType, 
+  -S <: String  ,
+  -N <: Nullity ,
+  -T <: String  ,
+  -C <: String
+]

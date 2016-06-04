@@ -1,4 +1,4 @@
-package tsql.spec
+package tsql
 
 import java.sql.Types._
 import shapeless.Witness
