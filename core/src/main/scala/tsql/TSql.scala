@@ -10,7 +10,14 @@ import scalaz._, Scalaz._, scalaz.effect.IO
 import java.sql.ResultSetMetaData._
 import JdbcType._
 
-final case class TSql[I, O](sql: String) {
+final case class TSql[I, O](sql: String) extends ProductArgs {
+
+  // def apply[A](a: A)(implicit w: Write[I, A]) = 42
+
+
+  // let's get this working
+  def applyProduct[A <: HList](a: A)(implicit ev: Write[I, A]) = 42
+
   def list[A](implicit ev: Read[O, A]): ConnectionIO[List[A]] = // no params yet
     HC.prepareStatement(sql)(HPS.executeQuery(ev.read(1).whileM[List](HRS.next)))
 }
@@ -19,8 +26,16 @@ final case class TSql[I, O](sql: String) {
 object TSql {
 
   final class Interpolator(val sc: StringContext) extends AnyVal {
-    def tsql(): TSql[_, _] =
+    def tsql(): Any = //Query1[_, _] = // TSql[_, _] =
       macro TSqlMacros.tsqlImpl
+
+    // TODO: this will give us interpolated arguments but we'll need to do implicit search and
+    // stuff internally.
+    // object sql extends ProductArgs {
+    //   def applyProduct[A](a: A): Any = 
+    //     macro TSqlMacros.tsqlImpl
+    // }
+
   }
 
   @bundle
@@ -82,7 +97,8 @@ object TSql {
       })
 
       // Done!
-      q"new TSql[$itype, $otype]($sql)"
+      // q"new TSql[$itype, $otype]($sql)"
+      q"new tsql.Query1[$itype, $otype]($sql)"
 
     }
 

@@ -35,7 +35,7 @@ object Read extends ReadDerivations with ReadInstances {
       lift(f)
   }
 
-  /** Construct a single-column Read asserting conformance with ColumnMeta[J, S, NoNulls]. */
+  // TODO: get rid of
   def advanced[J <: Int, S <: String, A](f: (ResultSet, Int) => A): Read[ColumnMeta[J, S, NoNulls, String, String], A] =
     lift(f)
 

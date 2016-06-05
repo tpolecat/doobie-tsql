@@ -2,11 +2,11 @@ import shapeless._
 
 import doobie.imports._
 import doobie.enum.nullability._
-import scalaz._, Scalaz._, scalaz.effect.IO
+import scalaz.effect.IO
+import tsql._
+import JdbcType._
 
 object first {
-
-  import tsql._
 
   val xa = DriverManagerTransactor[IO](
     "org.postgresql.Driver",
@@ -32,9 +32,10 @@ object first {
       FROM   country
     """
 
+    q().as[String :: Long :: Int :: Array[String] :: HNil]
 
-    val cio1 = q.list[String :: Long :: Int :: Array[String] :: HNil]
-    val cio2 = q.list[(String, Long, Int, Array[String])]
+    // val cio1 = q.list[String :: Long :: Int :: Array[String] :: HNil]
+    // val cio2 = q.list[(String, Long, Int, Array[String])]
 
     // tsql"select 1".list[Int] // not yet
 
@@ -45,9 +46,15 @@ object first {
     // q.as[(String, Int, Option[Int])]
     // q.as[Boo]
 
+
     // TODO: nesting
+
+    val q2 = tsql"select name from country where code = ?"
+
+    q2("FRA") // N.B. we had to make Read[+M, -A] for this to work .. confidence high!
+
+
 
   }
 
 }
-
