@@ -9,31 +9,22 @@ package object amm {
 
 
 
-  implicit def tsqlTPrint[I: TPrint, O: TPrint]: TPrint[TSql[I, O]] =
+
+  implicit def q1TPrint[I: TPrint, O: TPrint]: TPrint[QueryIO[I, O]] =
     TPrint.lambda { implicit cfg =>
-      val ts = TPrint.literal("TSql").render(cfg)
+      val ts = TPrint.literal("QueryIO").render(cfg)
       val (i, o) = (tprint[I], tprint[O])
       val i0 = brack(realign(i, 4), 2)
       val o0 = brack(realign(o, 5), 2)
-      s"TSql[\n$i0,\n$o0\n]"
+      s"QueryIO[\n$i0,\n$o0\n]"
     }
 
-
-  implicit def q1TPrint[I: TPrint, O: TPrint]: TPrint[Query1[I, O]] =
+  implicit def qoTPrint[O: TPrint]: TPrint[QueryO[O]] =
     TPrint.lambda { implicit cfg =>
-      val ts = TPrint.literal("Query1").render(cfg)
-      val (i, o) = (tprint[I], tprint[O])
-      val i0 = brack(realign(i, 4), 2)
-      val o0 = brack(realign(o, 5), 2)
-      s"Query1[\n$i0,\n$o0\n]"
-    }
-
-  implicit def qoTPrint[O: TPrint]: TPrint[Query0[O]] =
-    TPrint.lambda { implicit cfg =>
-      val ts = TPrint.literal("Query0").render(cfg)
+      val ts = TPrint.literal("QueryO").render(cfg)
       val o = tprint[O]
       val o0 = brack(realign(o, 5), 2)
-      s"Query0[\n$o0\n]"
+      s"QueryO[\n$o0\n]"
     }
 
   implicit def paramererMetaTPrint[

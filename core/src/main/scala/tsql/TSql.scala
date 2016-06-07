@@ -10,37 +10,37 @@ import scalaz._, Scalaz._, scalaz.effect.IO
 import java.sql.ResultSetMetaData._
 import JdbcType._
 
-final case class TSql[I, O](sql: String) extends ProductArgs {
-
-  // def apply[A](a: A)(implicit w: Write[I, A]) = 42
-
-
-  // let's get this working
-  def applyProduct[A <: HList](a: A)(implicit ev: Write[I, A]) = 42
-
-  def list[A](implicit ev: Read[O, A]): ConnectionIO[List[A]] = // no params yet
-    HC.prepareStatement(sql)(HPS.executeQuery(ev.read(1).whileM[List](HRS.next)))
-}
-
-
 object TSql {
 
-  final class Interpolator(val sc: StringContext) extends AnyVal {
-    def tsql(): Any = //Query1[_, _] = // TSql[_, _] =
+  final class Interpolator(sc: StringContext) {
+
+    def tsql(): Any = 
       macro TSqlMacros.tsqlImpl
 
     // TODO: this will give us interpolated arguments but we'll need to do implicit search and
     // stuff internally.
-    // object sql extends ProductArgs {
-    //   def applyProduct[A](a: A): Any = 
-    //     macro TSqlMacros.tsqlImpl
-    // }
+    object xsql extends ProductArgs {
+      def applyProduct[A](a: A): Any = 
+        macro TSqlMacros.implWithArgs[A]
+    }
 
   }
 
   @bundle
   class TSqlMacros(val c: Context) {
     import c.universe._
+
+    // ok we're good here.
+    def implWithArgs[A](a: Tree): Tree = {
+
+      // impl should be the same but with a seq of strings that need to be interspersed with '?'
+      // we need to infer Write[itype, a.tpe] ...
+
+      q"List[${a.tpe}]($a)"
+    }
+
+
+
 
     def setting(s: String, example: String): String =
       c.settings
@@ -97,8 +97,7 @@ object TSql {
       })
 
       // Done!
-      // q"new TSql[$itype, $otype]($sql)"
-      q"new tsql.Query1[$itype, $otype]($sql)"
+      q"new tsql.QueryIO[$itype, $otype]($sql)"
 
     }
 

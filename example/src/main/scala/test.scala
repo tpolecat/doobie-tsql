@@ -5,6 +5,7 @@ import doobie.enum.nullability._
 import scalaz.effect.IO
 import tsql._
 import JdbcType._
+import scalaz._, Scalaz._
 
 object first {
 
@@ -14,11 +15,6 @@ object first {
     "postgres",
     ""
   )
-
-  implicit val IntArray =
-    Read.advanced[JdbcType.JdbcArray, Witness.`"_int4"`.T, Array[Int]] { (rs, n) =>
-      rs.getArray(n).getArray.asInstanceOf[Array[Integer]].map(_.intValue)
-    }
 
   implicit val StringArray =
     Read.advanced[JdbcType.JdbcArray, Witness.`"_text"`.T, Array[String]] { (rs, n) =>
@@ -30,31 +26,23 @@ object first {
     val q = tsql"""
       SELECT name, population, 42, ARRAY['x', 'y']
       FROM   country
+      WHERE  code <> ?
     """
 
-    q().as[String :: Long :: Int :: Array[String] :: HNil]
+    case class Country(name: String, population: Long, const: Int, arr: Array[String])
 
-    // val cio1 = q.list[String :: Long :: Int :: Array[String] :: HNil]
-    // val cio2 = q.list[(String, Long, Int, Array[String])]
+    val cio = q("USA").of[Country].as[List]
 
-    // tsql"select 1".list[Int] // not yet
-
-    // val prog = cio.transact(xa).flatMap(as => as.map(_.toString).traverse(IO.putStrLn))
-
-    // prog.unsafePerformIO
-
-    // q.as[(String, Int, Option[Int])]
-    // q.as[Boo]
+    val cio2 = q.of[Country].apply("USA").as[List]
 
 
-    // TODO: nesting
+    val prog = cio.transact(xa).flatMap(as => as.map(_.toString).traverseU(IO.putStrLn))
 
-    val q2 = tsql"select name from country where code = ?"
-
-    q2("FRA") // N.B. we had to make Read[+M, -A] for this to work .. confidence high!
-
+    prog.unsafePerformIO
 
 
   }
 
 }
+
+
