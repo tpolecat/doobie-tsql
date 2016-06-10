@@ -43,6 +43,50 @@ object first {
 
   }
 
+
+  import shapeless.test._
+
+
+
+  val q1 = tsql"""
+    SELECT name, population, 42, ARRAY['x', 'y']
+    FROM   country
+    WHERE  code <> ?
+  """
+
+  def q2(s: String): ConnectionIO[Int] =
+    tsql"""
+      delete from country
+      WHERE  code <> $s
+    """
+
+
+  illTyped {
+    """
+    def q2(s: String): ConnectionIO[Int] =
+      tsql"delete from country WHERE  code <> $s and population > ?"
+    """
+  }
+
+  val q3: ConnectionIO[Int] =
+    tsql"""
+      delete from country
+    """
+
+  def q4: ConnectionIO[List[(String, Int)]] =
+    tsql"""
+      select name, population
+      from country
+    """.of[(String, Int)].as[List]
+
+  def q5(s: String): ConnectionIO[List[(String, Int)]] =
+    tsql"""
+      select name, population
+      from country
+      WHERE  code <> $s
+    """.of[(String, Int)].as[List]
+
+
 }
 
 

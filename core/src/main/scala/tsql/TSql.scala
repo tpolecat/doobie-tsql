@@ -8,40 +8,29 @@ import macrocompat.bundle
 import doobie.imports._
 import scalaz._, Scalaz._, scalaz.effect.IO
 import java.sql.ResultSetMetaData._
+import java.sql.ParameterMetaData._
 import JdbcType._
 
 object TSql {
 
+  /** The `tsql` string interpolator. */
   final class Interpolator(sc: StringContext) {
-
-    def tsql(): Any = 
-      macro TSqlMacros.tsqlImpl
-
-    // TODO: this will give us interpolated arguments but we'll need to do implicit search and
-    // stuff internally.
-    object xsql extends ProductArgs {
-      def applyProduct[A](a: A): Any = 
-        macro TSqlMacros.implWithArgs[A]
+    object tsql extends ProductArgs {
+      def applyProduct[A](a: A): Any = macro TSqlMacros.implWithArgs[A]
     }
-
   }
 
   @bundle
   class TSqlMacros(val c: Context) {
     import c.universe._
 
-    // ok we're good here.
-    def implWithArgs[A](a: Tree): Tree = {
+    val HNilType: Type = typeOf[HNil]
 
-      // impl should be the same but with a seq of strings that need to be interspersed with '?'
-      // we need to infer Write[itype, a.tpe] ...
-
-      q"List[${a.tpe}]($a)"
-    }
-
-
-
-
+    /**
+     * Get a setting, passed to the compiler as `-Xmacro-settings:doobie.foo=bar` (you can pass
+     * `-Xmacro-settings` many times) or abort with an error message that includes an example use
+     * of the setting.
+     */
     def setting(s: String, example: String): String =
       c.settings
        .find(_.startsWith("doobie." + s))
@@ -50,84 +39,112 @@ object TSql {
        .getOrElse(c.abort(c.enclosingPosition, 
         s"""The tsql interpolator needs a value for doobie.$s; you can specify this in sbt like: scalacOptions += "-Xmacro-settings:doobie.$s=$example"""))
 
-    def toType(n: Int): Type = {
-      n match {
-        case `columnNoNulls`         => typeOf[NoNulls]
-        case `columnNullable`        => typeOf[Nullable]
-        case `columnNullableUnknown` => typeOf[NullableUnknown]
+    /** Translate a JDBC nullability constant to some `T <: Nullity`. */
+    def jdbcNullabilityType(n: Int): Type = {
+      n match { // N.B. alternatices in each pair are equal, which raises a warning
+        case `columnNoNulls`         /* | `parameterNoNulls`         */ => typeOf[NoNulls]
+        case `columnNullable`        /* | `parameterNullable`        */ => typeOf[Nullable]
+        case `columnNullableUnknown` /* | `parameterNullableUnknown` */ => typeOf[NullableUnknown]
       }
     }
 
-    def packHList(ts: List[Type]): Type = 
-      ts.foldRight(typeOf[HNil])((a, b) => c.typecheck(tq"shapeless.::[$a, $b]", c.TYPEmode).tpe)
-
-    def tsqlImpl(): Tree = {
-
-      // Construct a transactor from compiler settings
+    /** Get a Transactor[IO] from macro settings. */
+    def xa: Transactor[IO] = {
       val driver   = setting("driver",   "org.h2.Driver")
       val connect  = setting("connect",  "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1")
       val user     = setting("user",     "bobDole")
       val password = setting("password", "banana // or leave empty")
-      val xa       = DriverManagerTransactor[IO](driver, connect, user, password)
-
-      // The sql string itsef will be a single value.
-      val q"tsql.`package`.toTsqlInterpolator(scala.StringContext.apply($sql))" = c.prefix.tree
-      val Literal(Constant(sqlString: String)) = sql
-
-      // Get column and parameter metadata
-      val prog = HC.prepareStatement(sqlString)(columnMeta tuple parameterMeta)
-      val (cm, pm) = prog.transact(xa).attemptSql.unsafePerformIO match {
-        case -\/(e) => c.abort(c.enclosingPosition, e.getMessage)
-        case \/-(d) => d
-      }
-
-      // Compute the input type
-      val itype = packHList(pm.map {
-        case (j, sch, n, m) =>
-          c.typecheck(tq"ParameterMeta[$j, $sch, ${toType(n)}, $m]", c.TYPEmode).tpe
-      })
-
-      def singleton[A: Liftable](a: A): Type =
-        c.typecheck(tq"$a").tpe
-
-      // Compute the output type
-      val otype  = packHList(cm.map {
-        case (j, sch, n, t, col) => 
-          c.typecheck(tq"ColumnMeta[$j, $sch, ${toType(n)}, $t, $col]", c.TYPEmode).tpe
-      })
-
-      // Done!
-      q"new tsql.QueryIO[$itype, $otype]($sql)"
-
+      DriverManagerTransactor[IO](driver, connect, user, password)
     }
 
-    val columnMeta: PreparedStatementIO[List[(Int, String, Int, String, String)]] =
+    /** Pack a list of types into an `HList`. */
+    def packHList(ts: List[Type]): Type = 
+      ts.foldRight(HNilType)((a, b) => c.typecheck(tq"shapeless.::[$a, $b]", c.TYPEmode).tpe)
+
+    /** Compute the column constraint, which will be an `HList` of `ColumnMeta`. */
+    val columnConstraint: PreparedStatementIO[Type] =
       FPS.getMetaData.map { 
-        case null => Nil
+        case null => HNilType
         case md   =>
-          (1 to md.getColumnCount).toList.map { i =>
+          packHList((1 to md.getColumnCount).toList.map { i =>
             val j = md.getColumnType(i)
             val s = md.getColumnTypeName(i)
             val n = md.isNullable(i)
             val t = md.getTableName(i)
-            val c = md.getColumnName(i)
-            (j, s, n, t, c)
-          }      
+            val k = md.getColumnName(i)
+            c.typecheck(tq"ColumnMeta[$j, $s, ${jdbcNullabilityType(n)}, $t, $k]", c.TYPEmode).tpe
+          })
       }
 
-
-    val parameterMeta: PreparedStatementIO[List[(Int, String, Int, Int)]] =
+    /** Compute the parameter constraint, which will be an `HList` of `ParameterMeta`. */
+    val parameterConstraint: PreparedStatementIO[(Type, Int)] =
       FPS.getParameterMetaData.map { 
-        case null => Nil
+        case null => (HNilType, 0)
         case md   =>
-          (1 to md.getParameterCount).toList.map { i =>
+          (packHList((1 to md.getParameterCount).toList.map { i =>
             val j = md.getParameterType(i)
             val s = md.getParameterTypeName(i)
             val n = md.isNullable(i)
             val m = md.getParameterMode(i)
-            (j, s, n, m)
-          }      
+            c.typecheck(tq"ParameterMeta[$j, $s, ${jdbcNullabilityType(n)}, $m]", c.TYPEmode).tpe
+          }), md.getParameterCount)
       }
+
+    /** The interpolator implementation. */
+    def implWithArgs[A](a: Tree): Tree = {
+
+      // Our SQL
+      val q"tsql.`package`.toTsqlInterpolator(scala.StringContext.apply(..$parts)).tsql" = c.prefix.tree
+      val sql = parts.map { case Literal(Constant(s: String)) => s } .mkString("?")
+
+      // Get column and parameter metadata
+      val prog = HC.prepareStatement(sql)(parameterConstraint tuple columnConstraint)
+      val ((it, pcount), ot) = prog.transact(xa).attemptSql.unsafePerformIO match {
+        case -\/(e) => c.abort(c.enclosingPosition, e.getMessage)
+        case \/-(d) => d
+      }
+
+      // There are two cases. If there is only one string literal "part" then there are no
+      // interpolated values in the query and we only need to handle `?` placeholders. Otherwise
+      // we only need to handle interplolated values.
+      if (parts.length == 1) {
+
+        // Done!
+        (it, ot) match {
+          case (HNilType, HNilType) => q"doobie.imports.HC.prepareStatement($sql)(doobie.imports.HPS.executeUpdate)"
+          case (_       , HNilType) => q"new tsql.Update[$it]($sql)"
+          case (HNilType, _       ) => q"new tsql.QueryO[$ot]($sql, doobie.imports.HPS.delay(()))"
+          case (_       , _       ) => q"new tsql.QueryIO[$it, $ot]($sql)"
+        }
+
+      } else {
+
+        // If the input type and the arg types aren't aligned correctly (this can happen if you have
+        // both interpolated values and `?`s) then abort with an error. We can't compute a residual
+        // type because we would have to figure out the position of the placeholders.
+        if (parts.length != pcount + 1)
+          c.abort(c.enclosingPosition, "SQL literals may contain placeholders (?) or interpolated values ($x) but not both.")
+
+        // Ok the game now is to match ip iType with a's type, so we need a Write[it, a.tpe]
+        val need = c.typecheck(tq"tsql.Write[$it, ${a.tpe}]", c.TYPEmode).tpe
+
+        // Ok now look it up
+        val write = c.inferImplicitValue(need) match {
+          case EmptyTree => c.abort(c.enclosingPosition, "parameter types don't match up, sorry")
+          case t         => t
+        }
+
+        // Done!
+        (it, ot) match {
+          case (HNilType, HNilType) => q"doobie.imports.HC.prepareStatement($sql)(doobie.imports.HPS.executeUpdate)"
+          case (_       , HNilType) => q"(new tsql.Update[$it]($sql)).applyProduct($a)($write)"
+          case (HNilType, _       ) => q"new tsql.QueryO[$ot]($sql, doobie.imports.HPS.delay(()))"
+          case (_       , _       ) => q"(new tsql.QueryIO[$it, $ot]($sql)).applyProduct($a)($write)"
+        }
+
+      }
+
+    }
   }
 
 }
