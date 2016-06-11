@@ -13,4 +13,4 @@ TODO before first published version:
 - [ ] support for databases with bad metadata support (?)
 - [ ] support for bulk update
 - [ ] support for `IN` clauses
-- 
+
