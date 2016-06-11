@@ -123,14 +123,14 @@ object TSql {
         // both interpolated values and `?`s) then abort with an error. We can't compute a residual
         // type because we would have to figure out the position of the placeholders.
         if (parts.length != pcount + 1)
-          c.abort(c.enclosingPosition, "SQL literals may contain placeholders (?) or interpolated values ($x) but not both.")
+          c.abort(c.enclosingPosition, "SQL literals can contain placeholders (?) or interpolated values ($x) but not both.")
 
-        // Ok the game now is to match ip iType with a's type, so we need a Write[it, a.tpe]
+        // Ok the game now is to match up `it` with `a.tpe`, so we need a Write[it, a.tpe]
         val need = c.typecheck(tq"tsql.Write[$it, ${a.tpe}]", c.TYPEmode).tpe
 
         // Ok now look it up
         val write = c.inferImplicitValue(need) match {
-          case EmptyTree => c.abort(c.enclosingPosition, "parameter types don't match up, sorry")
+          case EmptyTree => c.abort(c.enclosingPosition, "parameter types don't match up, sorry") // TODO: normal error
           case t         => t
         }
 

@@ -23,22 +23,22 @@ object first {
 
   def main(args: Array[String]): Unit = {
 
-    val q = tsql"""
-      SELECT name, population, 42, ARRAY['x', 'y']
-      FROM   country
-      WHERE  code <> ?
-    """
+    // val q = tsql"""
+    //   SELECT name, population, 42, ARRAY['x', 'y']
+    //   FROM   country
+    //   WHERE  code <> ?
+    // """
 
-    case class Country(name: String, population: Long, const: Int, arr: Array[String])
+    // case class Country(name: String, population: Long, const: Int, arr: Array[String])
 
-    val cio = q("USA").of[Country].as[List]
+    // val cio = q("USA").rr[List[Country]]
 
-    val cio2 = q.of[Country].apply("USA").as[List]
+    // val cio2 = q.out[Country].apply("USA").as[List]
 
 
-    val prog = cio.transact(xa).flatMap(as => as.map(_.toString).traverseU(IO.putStrLn))
+    // val prog = cio.transact(xa).flatMap(as => as.map(_.toString).traverseU(IO.putStrLn))
 
-    prog.unsafePerformIO
+    // prog.unsafePerformIO
 
 
   }
@@ -73,19 +73,43 @@ object first {
       delete from country
     """
 
-  def q4: ConnectionIO[List[(String, Int)]] =
+  // def q4: ConnectionIO[List[(String, Int)]] =
+  //   tsql"""
+  //     select name, population
+  //     from country
+  //   """.out[(String, Int)].as[List]
+
+  def q4a: ConnectionIO[List[(String, Int)]] =
     tsql"""
       select name, population
       from country
-    """.of[(String, Int)].as[List]
+    """.rr[List[(String, Int)]]
 
-  def q5(s: String): ConnectionIO[List[(String, Int)]] =
+  def q4b: ConnectionIO[(String, Int)] =
+    tsql"""
+      select name, population
+      from country
+    """.rr[(String, Int)] // exactly one
+
+  def q4c: ConnectionIO[Option[(String, Int)]] =
+    tsql"""
+      select name, population
+      from country
+    """.rr[Option[(String, Int)]] // zero or one
+
+  // def q5(s: String): ConnectionIO[List[(String, Int)]] =
+  //   tsql"""
+  //     select name, population
+  //     from country
+  //     WHERE  code <> $s
+  //   """.out[(String, Int)].as[List]
+
+  def q5a(s: String): ConnectionIO[List[(String, Int)]] =
     tsql"""
       select name, population
       from country
       WHERE  code <> $s
-    """.of[(String, Int)].as[List]
-
+    """.rr[List[(String, Int)]]
 
 }
 
