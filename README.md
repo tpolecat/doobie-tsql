@@ -3,6 +3,7 @@ compile-time typechecked sql literals for doobie
 
 Short-term
 
+- [ ] Parameter Mode type and check
 - [ ] clean up naming
 - [ ] clean up ammonite thingy (can we make it `provided`?)
 - [ ] simple doc via tut (include a `to[Map]` example)
