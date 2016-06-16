@@ -16,7 +16,7 @@ object TSql {
   /** The `tsql` string interpolator. */
   final class Interpolator(sc: StringContext) {
     object tsql extends ProductArgs {
-      def applyProduct[A](a: A): Any = macro TSqlMacros.implWithArgs[A]
+      def applyProduct[A](a: A): Any = macro TSqlMacros.impl[A]
     }
   }
 
@@ -91,7 +91,7 @@ object TSql {
       }
 
     /** The interpolator implementation. */
-    def implWithArgs[A](a: Tree): Tree = {
+    def impl[A](a: Tree): Tree = {
 
       // Our SQL
       val q"tsql.`package`.toTsqlInterpolator(scala.StringContext.apply(..$parts)).tsql" = c.prefix.tree
@@ -103,6 +103,8 @@ object TSql {
         case -\/(e) => c.abort(c.enclosingPosition, e.getMessage)
         case \/-(d) => d
       }
+
+      // TODO: get rid of repetition of the it =:= HNil cases.
 
       // There are two cases. If there is only one string literal "part" then there are no
       // interpolated values in the query and we only need to handle `?` placeholders. Otherwise

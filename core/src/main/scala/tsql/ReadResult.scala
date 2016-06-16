@@ -4,12 +4,10 @@ import java.sql.ResultSet
 import scala.collection.generic.CanBuildFrom
 
 // i can read the whole resultset into an FA
-case class ReadResult[O, FA](run: ResultSet => FA)
+case class ReadResult[O, FA](run: ResultSet => FA) // TODO: ResultSetIO[FA]
 
 object ReadResult {
 
-  // If we can read A under constraint O then we can read the entire resultset into F[A] given a
-  // CanBuildFrom
   implicit def CBFReadResult[F[_], O, A](implicit 
     r: Read[O, A],
     C: CanBuildFrom[Nothing, A, F[A]]
@@ -21,7 +19,19 @@ object ReadResult {
       b.result()
     }
 
-  // If we can read A under constraint O then we can read a 1-element resultset into A
+  implicit def CBFMappyReadResult[F[_, _], O, A, B](implicit
+    r: Read[O, (A, B)],
+    C: CanBuildFrom[Nothing, (A, B), F[A, B]]
+  ): ReadResult[O, F[A, B]] =
+    ReadResult { rs =>
+      val b = C()
+      while (rs.next)
+        b += r.unsafeGet(rs, 1)
+      b.result()
+    }
+
+
+  // If we can read A under constraint O then we can read a 1-row resultset into A
   implicit def UniqueReadResult[O, A](implicit 
     r: Read[O, A]
   ): ReadResult[O, A] =
@@ -32,7 +42,7 @@ object ReadResult {
       } else sys.error("not enough")
     }
 
-  // If we can read A under constraint O then we can read a 0 or 1-element resultset into A
+  // If we can read A under constraint O then we can read a 0 or 1-row resultset into A
   implicit def OptionReadResult[O, A](implicit 
     r: Read[O, A]
   ): ReadResult[O, Option[A]] =
