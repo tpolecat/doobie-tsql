@@ -107,13 +107,13 @@ lazy val h2 = project.in(file("contrib/h2"))
   .settings(commonSettings)
   .settings(
     scalacOptions ++= Seq(
-      "-Xmacro-settings:doobie.driver=org.postgresql.Driver",
-      "-Xmacro-settings:doobie.connect=jdbc:postgresql:world",
-      "-Xmacro-settings:doobie.user=postgres",
+      "-Xmacro-settings:doobie.driver=org.h2.Driver",
+      "-Xmacro-settings:doobie.connect=jdbc:h2:world",
+      "-Xmacro-settings:doobie.user=",
       "-Xmacro-settings:doobie.password="
     ),
     libraryDependencies ++= Seq(
-      "org.tpolecat"  %% "doobie-contrib-postgresql" % "0.2.3"
+      "org.tpolecat"  %% "doobie-contrib-h2" % "0.2.3"
     ),
     initialCommands := s"""
       |import tsql._, tsql.amm._, scalaz._, Scalaz._, doobie.imports._, shapeless._
