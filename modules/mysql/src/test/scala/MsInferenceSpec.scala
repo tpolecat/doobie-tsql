@@ -54,7 +54,7 @@ object PGInferenceSpec extends Specification {
       ]](a)
     }
 
-    "infer QueryIO[«fancy»] for parameterized select with placeholders" in {
+    "infer QueryIO[Any, «fancy»] for parameterized select with placeholders" in {
       val a = tsql"select xname, population from city where countrycode = ?"
       checkType[QueryIO[
         Any,

@@ -69,6 +69,11 @@ trait WriteDerivations {
 
 }
 
+// N.B. Write instances are prioritized to be unique by Java type, which is reasonable because the
+// specification singles out primary write targets. This allows us to infer Any for the input 
+// constraint when terrible databases like MySQL refuse to compute parameter metadata and get a
+// reasonable Write instance; i.e., Write[Any, (Int, String, Float)] will just give us our default
+// mappings and all is well.
 trait WriteInstances extends WriteInstances0 {
 
   // Primary write targets, as defined by the JDBC specification

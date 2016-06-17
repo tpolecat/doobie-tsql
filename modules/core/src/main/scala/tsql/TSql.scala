@@ -13,6 +13,8 @@ import JdbcType._
 
 object TSql {
 
+  val checkParametersKey = "checkParameters"
+
   /** The `tsql` string interpolator. */
   final class Interpolator(sc: StringContext) {
     object tsql extends ProductArgs {
@@ -24,22 +26,24 @@ object TSql {
   class TSqlMacros(val c: Context) {
     import c.universe._
 
-    val checkParameters = false
+    val checkParameters = setting(checkParametersKey).forall(_ != "false")
 
     val HNilType: Type = typeOf[HNil]
     val AnyType:  Type = typeOf[Any]
+
+    def setting(s: String): Option[String] =
+      c.settings
+       .find(_.startsWith("doobie." + s))
+       .map(_.split("\\s*=\\s*", 2))
+       .collect { case Array(_, v) => v }
 
     /**
      * Get a setting, passed to the compiler as `-Xmacro-settings:doobie.foo=bar` (you can pass
      * `-Xmacro-settings` many times) or abort with an error message that includes an example use
      * of the setting.
      */
-    def setting(s: String, example: String): String =
-      c.settings
-       .find(_.startsWith("doobie." + s))
-       .map(_.split("\\s*=\\s*", 2))
-       .collect { case Array(_, v) => v }
-       .getOrElse(c.abort(c.enclosingPosition, 
+    def settingOrFail(s: String, example: String): String =
+      setting(s).getOrElse(c.abort(c.enclosingPosition, 
         s"""macro setting not found: doobie.$s
           |
           |The tsql interpolator needs a value for doobie.$s; you can specify it in sbt like:
@@ -58,10 +62,10 @@ object TSql {
 
     /** Get a Transactor[IO] from macro settings. */
     def xa: Transactor[IO] = {
-      val driver   = setting("driver",   "org.h2.Driver")
-      val connect  = setting("connect",  "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1")
-      val user     = setting("user",     "bobDole")
-      val password = setting("password", "banana // or leave empty")
+      val driver   = settingOrFail("driver",   "org.h2.Driver")
+      val connect  = settingOrFail("connect",  "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1")
+      val user     = settingOrFail("user",     "bobDole")
+      val password = settingOrFail("password", "banana // or leave empty")
       DriverManagerTransactor[IO](driver, connect, user, password)
     }
 
@@ -102,11 +106,11 @@ object TSql {
 
           c.abort(c.enclosingPosition, s"""your database is terrible
             |
-            |The ${setting("driver", "")} driver does not seem to support parameter metadata, which
+            |The ${setting("driver").getOrElse("")} driver does not seem to support parameter metadata, which
             |means doobie cannot typecheck your statement inputs. You can disable this warning in sbt
             |as follows (your program will still compile but statement inputs will be unchecked):
             |
-            |  scalacOptions += "-Xmacro-settings:doobie.checkParameters=false"
+            |  scalacOptions += "-Xmacro-settings:doobie.${checkParametersKey}=false"
             |
             |The underlying error was:
             |
