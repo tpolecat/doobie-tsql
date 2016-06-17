@@ -8,7 +8,7 @@ import org.specs2.mutable.Specification
 import tsql._
 import tsql.JdbcType._
 
-object InferenceSpec extends Specification {
+object PGInferenceSpec extends Specification {
   
   type PGvarchar = W.`"varchar"`.T
   type PGbpchar  = W.`"bpchar"`.T

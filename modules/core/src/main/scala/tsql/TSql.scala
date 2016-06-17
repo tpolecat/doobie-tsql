@@ -24,7 +24,10 @@ object TSql {
   class TSqlMacros(val c: Context) {
     import c.universe._
 
+    val checkParameters = false
+
     val HNilType: Type = typeOf[HNil]
+    val AnyType:  Type = typeOf[Any]
 
     /**
      * Get a setting, passed to the compiler as `-Xmacro-settings:doobie.foo=bar` (you can pass
@@ -37,7 +40,12 @@ object TSql {
        .map(_.split("\\s*=\\s*", 2))
        .collect { case Array(_, v) => v }
        .getOrElse(c.abort(c.enclosingPosition, 
-        s"""The tsql interpolator needs a value for doobie.$s; you can specify this in sbt like: scalacOptions += "-Xmacro-settings:doobie.$s=$example"""))
+        s"""macro setting not found: doobie.$s
+          |
+          |The tsql interpolator needs a value for doobie.$s; you can specify it in sbt like:
+          |
+          |  scalacOptions += "-Xmacro-settings:doobie.$s=$example"
+         """.stripMargin))
 
     /** Translate a JDBC nullability constant to some `T <: Nullity`. */
     def jdbcNullabilityType(n: Int): Type = {
@@ -88,6 +96,26 @@ object TSql {
             val m = md.getParameterMode(i)
             c.typecheck(tq"ParameterMeta[$j, $s, ${jdbcNullabilityType(n)}, $m]", c.TYPEmode).tpe
           }), md.getParameterCount)
+      } .exceptSql { e =>
+
+        if (checkParameters) {
+
+          c.abort(c.enclosingPosition, s"""your database is terrible
+            |
+            |The ${setting("driver", "")} driver does not seem to support parameter metadata, which
+            |means doobie cannot typecheck your statement inputs. You can disable this warning in sbt
+            |as follows (your program will still compile but statement inputs will be unchecked):
+            |
+            |  scalacOptions += "-Xmacro-settings:doobie.checkParameters=false"
+            |
+            |The underlying error was:
+            |
+            |  > SQLState ${e.getSQLState}
+            |  > ${e.getMessage}
+            """.stripMargin)
+
+          } else (AnyType, -1).point[PreparedStatementIO]
+      
       }
 
     /** The interpolator implementation. */
@@ -124,7 +152,7 @@ object TSql {
         // If the input type and the arg types aren't aligned correctly (this can happen if you have
         // both interpolated values and `?`s) then abort with an error. We can't compute a residual
         // type because we would have to figure out the position of the placeholders.
-        if (parts.length != pcount + 1)
+        if (checkParameters && parts.length != pcount + 1)
           c.abort(c.enclosingPosition, "SQL literals can contain placeholders (?) or interpolated values ($x) but not both.")
 
         // Ok the game now is to match up `it` with `a.tpe`, so we need a Write[it, a.tpe]

@@ -49,9 +49,9 @@ lazy val commonSettings = Seq(
 
 lazy val root = project.in(file("."))
   .settings(buildSettings)
-  .aggregate(core, ammonite, postgres, h2)
+  .aggregate(core, ammonite, postgres, h2, mysql)
 
-lazy val core = project.in(file("core"))
+lazy val core = project.in(file("modules/core"))
   .settings(buildSettings)
   .settings(commonSettings)
   .settings(
@@ -64,7 +64,7 @@ lazy val core = project.in(file("core"))
     addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
   )
 
-lazy val ammonite = project.in(file("contrib/ammonite"))
+lazy val ammonite = project.in(file("modules/ammonite"))
   .settings(buildSettings)
   .settings(commonSettings)
   .settings(
@@ -72,7 +72,7 @@ lazy val ammonite = project.in(file("contrib/ammonite"))
   )
   .dependsOn(core)
 
-lazy val postgres = project.in(file("contrib/postgres"))
+lazy val postgres = project.in(file("modules/postgres"))
   .settings(buildSettings)
   .settings(commonSettings)
   .settings(
@@ -89,7 +89,7 @@ lazy val postgres = project.in(file("contrib/postgres"))
       |import scalaz._,Scalaz._
       |import scalaz.concurrent.Task
       |import doobie.imports._
-      |import doobie.contrib.postgresql.pgtypes._
+      |import doobie.modules.postgresql.pgtypes._
       |val xa: Transactor[Task] = DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
       |import xa.yolo._
       |import org.postgis._
@@ -101,8 +101,7 @@ lazy val postgres = project.in(file("contrib/postgres"))
   )
   .dependsOn(core, ammonite)
 
-
-lazy val h2 = project.in(file("contrib/h2"))
+lazy val h2 = project.in(file("modules/h2"))
   .settings(buildSettings)
   .settings(commonSettings)
   .settings(
@@ -121,5 +120,23 @@ lazy val h2 = project.in(file("contrib/h2"))
   )
   .dependsOn(core, ammonite)
 
+lazy val mysql = project.in(file("modules/mysql"))
+  .settings(buildSettings)
+  .settings(commonSettings)
+  .settings(
+    scalacOptions ++= Seq(
+      "-Xmacro-settings:doobie.driver=com.mysql.cj.jdbc.Driver",
+      "-Xmacro-settings:doobie.connect=jdbc:mysql://localhost/world?useSSL=false&serverTimezone=UTC",
+      "-Xmacro-settings:doobie.user=root",
+      "-Xmacro-settings:doobie.password=mysql"
+    ),
+    libraryDependencies ++= Seq(
+      "mysql" % "mysql-connector-java" % "6.0.2"
+    ),
+    initialCommands := s"""
+      |import tsql._, tsql.amm._, scalaz._, Scalaz._, doobie.imports._, shapeless._
+      |""".stripMargin
+  )
+  .dependsOn(core, ammonite)
 
 
