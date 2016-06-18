@@ -4,9 +4,8 @@ import shapeless._
 
 /** 
  * Typeclass witnessing that P and S can be concatenated to form Out, *and* that Out can
- * be split into P and S. This is a generalization of shapeless.ops.hlist.Prepend
+ * be split into P and S. This is a generalization of shapeless.ops.hlist.Concat
  */
-
 trait Concat[P <: HList, S <: HList] {
   type Out <: HList 
   def apply(p: P, s: S): Out
@@ -14,14 +13,14 @@ trait Concat[P <: HList, S <: HList] {
 }
 
 
-trait LowestPriorityPrepend {
+trait LowestPriorityConcat {
 
   type Aux[P <: HList, S <: HList, Out0 <: HList] =
     Concat[P, S] { 
       type Out = Out0 
     }
 
-  implicit def hlistPrepend[PH, PT <: HList, S <: HList](
+  implicit def hlistConcat[PH, PT <: HList, S <: HList](
     implicit pt : Concat[PT, S]
   ): Concat.Aux[PH :: PT, S, PH :: pt.Out] =
     new Concat[PH :: PT, S] {
@@ -39,9 +38,9 @@ trait LowestPriorityPrepend {
     }
 }
 
-trait LowPriorityPrepend extends LowestPriorityPrepend {
+trait LowPriorityConcat extends LowestPriorityConcat {
 
-  implicit def hnilPrepend0[P <: HList]: Aux[P, HNil, P] =
+  implicit def hnilConcat0[P <: HList]: Aux[P, HNil, P] =
     new Concat[P, HNil] {
       type Out = P
       def apply(prefix : P, suffix : HNil): P = prefix
@@ -49,12 +48,12 @@ trait LowPriorityPrepend extends LowestPriorityPrepend {
     }
 }
 
-object Concat extends LowPriorityPrepend {
+object Concat extends LowPriorityConcat {
 
   def apply[P <: HList, S <: HList](implicit prepend: Concat[P, S]): Aux[P, S, prepend.Out] = 
     prepend
 
-  implicit def hnilPrepend1[S <: HList]: Aux[HNil, S, S] =
+  implicit def hnilConcat1[S <: HList]: Aux[HNil, S, S] =
     new Concat[HNil, S] {
       type Out = S
       def apply(prefix : HNil, suffix : S): S = suffix

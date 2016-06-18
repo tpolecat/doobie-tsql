@@ -82,8 +82,8 @@ trait ReadDerivations  extends ReadDerivations1 {
 
 trait ReadDerivations1 {
 
-  // We want to be able to derive instances Read[M0 :: M1 :: ... :: HNil, A :: B :: ... :: HNil]
-  // where the types A, B, etc. may need further destructuring.
+  // We want to be able to derive instance Read[M, A :: ... :: HNil] where we need to expand A via
+  // Generic, assuming we can derive Read[M, A0 :: A1 :: A2 :: ... :: HNil] with A's components.
   implicit def hconsG[M, H, HG <: HList, T <: HList, O <: HList](
     implicit g: Generic.Aux[H, HG],
              p: Concat.Aux[HG, T, O],
@@ -93,7 +93,6 @@ trait ReadDerivations1 {
       val (hg, t) = p.unapply(r.unsafeGet(rs, n))
       g.from(hg) :: t
     }
-
 
 }
 
@@ -138,33 +137,5 @@ trait ReadInstances {
   implicit val DateDate           = Read.basic[JdbcDate         ](_ getDate       _)
   implicit val TimeTime           = Read.basic[JdbcTime         ](_ getTime       _)
   implicit val TimestampTimestamp = Read.basic[JdbcTimestamp    ](_ getTimestamp  _)
-
-}
-
-
-
-object xxx {
-
-  {
-
-    type X[Y <: Int] = ColumnMeta[Y, String, NoNulls, String, String]
-
-    type M = X[JdbcInteger] :: X[JdbcInteger] :: X[JdbcVarChar] :: HNil // inferred
-    
-    implicitly[Read[M, Int :: Int :: String :: HNil]]
-
-    type A = (Int, (Int, String))
-
-    type H = (Int, Int)
-    type T = String :: HNil
-    val g = Generic[H]; type HG = g.Repr
-
-    val p = Prepend[HG, T]; type O = p.Out
-
-    implicitly[O =:= (Int :: Int :: String :: HNil)]
-
-    implicitly[Read[M, A]]
-
-  }
 
 }
