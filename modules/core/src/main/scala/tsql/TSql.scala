@@ -102,7 +102,7 @@ object TSql {
           }), md.getParameterCount)
       } .exceptSql { e =>
 
-        if (checkParameters) {
+        if (checkParameters && e.getSQLState == "S1C00") {
 
           c.abort(c.enclosingPosition, s"""your database is terrible
             |

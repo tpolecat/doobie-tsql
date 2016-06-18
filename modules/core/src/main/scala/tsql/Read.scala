@@ -2,7 +2,8 @@ package tsql
 
 import doobie.imports.{ FRS, ResultSetIO }
 import java.sql.ResultSet
-import shapeless.{ HNil, HList, ::, Lazy, Generic, <:!< }
+import shapeless.{ HNil, HList, ::, Lazy, Generic, <:!<, =:!= }
+import shapeless.ops.hlist.Prepend
 import scalaz.Coyoneda
 import JdbcType._
 
@@ -41,7 +42,7 @@ object Read extends ReadDerivations with ReadInstances {
 
 }
 
-trait ReadDerivations {
+trait ReadDerivations  extends ReadDerivations1 {
 
   // We can promote a non-option no-null single-column read to an option read for any nullity. The
   // coyoneda encoding allows us to do the initial column read and immediately stop if it was null,
@@ -58,9 +59,11 @@ trait ReadDerivations {
     }
 
   // Todo: Array -> List, Vector, etc.
-  // Todo: decode a :: HNil as just a
 
-  implicit val hnil: Read[HNil, HNil] =
+  implicit def unitary[M, A](implicit ev: Read[M, A]): Read[M :: HNil, A] =
+    ev.asInstanceOf[Read[M :: HNil, A]]
+
+  implicit def hnil[A]: Read[A, HNil] =
     Read.lift((_, _) => HNil)
 
   implicit def hcons[MH, H, MT <: HList, T <: HList](
@@ -74,6 +77,23 @@ trait ReadDerivations {
              r: Lazy[Read[M, B]]
    ): Read[M, A] =
     Read.lift((rs, n) => g.from(r.value.unsafeGet(rs, n)))
+
+}
+
+trait ReadDerivations1 {
+
+  // We want to be able to derive instances Read[M0 :: M1 :: ... :: HNil, A :: B :: ... :: HNil]
+  // where the types A, B, etc. may need further destructuring.
+  implicit def hconsG[M, H, HG <: HList, T <: HList, O <: HList](
+    implicit g: Generic.Aux[H, HG],
+             p: Concat.Aux[HG, T, O],
+             r: Read[M, O]
+  ): Read[M, H :: T] = 
+    Read.lift { (rs, n) =>
+      val (hg, t) = p.unapply(r.unsafeGet(rs, n))
+      g.from(hg) :: t
+    }
+
 
 }
 
@@ -118,5 +138,33 @@ trait ReadInstances {
   implicit val DateDate           = Read.basic[JdbcDate         ](_ getDate       _)
   implicit val TimeTime           = Read.basic[JdbcTime         ](_ getTime       _)
   implicit val TimestampTimestamp = Read.basic[JdbcTimestamp    ](_ getTimestamp  _)
+
+}
+
+
+
+object xxx {
+
+  {
+
+    type X[Y <: Int] = ColumnMeta[Y, String, NoNulls, String, String]
+
+    type M = X[JdbcInteger] :: X[JdbcInteger] :: X[JdbcVarChar] :: HNil // inferred
+    
+    implicitly[Read[M, Int :: Int :: String :: HNil]]
+
+    type A = (Int, (Int, String))
+
+    type H = (Int, Int)
+    type T = String :: HNil
+    val g = Generic[H]; type HG = g.Repr
+
+    val p = Prepend[HG, T]; type O = p.Out
+
+    implicitly[O =:= (Int :: Int :: String :: HNil)]
+
+    implicitly[Read[M, A]]
+
+  }
 
 }

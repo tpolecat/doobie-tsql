@@ -9,7 +9,7 @@ class QueryIO[I,O](sql: String) extends ProductArgs {
 }
 
 class QueryO[O](sql: String, prepare: PreparedStatementIO[Unit]) {
-  def rr[FA](implicit rr: ReadResult[O, FA]): ConnectionIO[FA] =
+  def as[FA](implicit rr: ReadResult[O, FA]): ConnectionIO[FA] =
     HC.prepareStatement(sql)(prepare.flatMap(_ => HPS.executeQuery(FRS.raw(rr.run))))
 }
 

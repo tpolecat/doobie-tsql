@@ -3,7 +3,7 @@
 val amm = taskKey[Unit]("Run the Ammonite REPL")
 
 val ammSettings = Seq(
-  libraryDependencies += "com.lihaoyi" % "ammonite-repl" % "0.6.0" % "test" cross CrossVersion.full,
+  libraryDependencies += "com.lihaoyi" % "ammonite-repl" % "0.6.2" % "test" cross CrossVersion.full,
   amm := toError((runner in run).value.run(
       "ammonite.repl.Main", 
       Attributed.data((fullClasspath in Test).value), {
@@ -13,6 +13,8 @@ val ammSettings = Seq(
       streams.value.log
   ))
 )
+
+aggregate in amm := false
 
 lazy val buildSettings = Seq(
   organization := "org.tpolecat",
@@ -50,6 +52,7 @@ lazy val commonSettings = Seq(
 lazy val root = project.in(file("."))
   .settings(buildSettings)
   .aggregate(core, ammonite, postgres, h2, mysql)
+  // .settings(aggregate in amm := false)
 
 lazy val core = project.in(file("modules/core"))
   .settings(buildSettings)
@@ -89,7 +92,7 @@ lazy val postgres = project.in(file("modules/postgres"))
       |import scalaz._,Scalaz._
       |import scalaz.concurrent.Task
       |import doobie.imports._
-      |import doobie.modules.postgresql.pgtypes._
+      |import doobie.contrib.postgresql.pgtypes._
       |val xa: Transactor[Task] = DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
       |import xa.yolo._
       |import org.postgis._
