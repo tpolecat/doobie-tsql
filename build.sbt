@@ -144,3 +144,21 @@ lazy val mysql = project.in(file("modules/mysql"))
   .dependsOn(core, ammonite)
 
 
+lazy val docs = project.in(file("modules/docs"))
+  .settings(buildSettings)
+  .settings(commonSettings)
+  .settings(tutSettings)
+  .settings(
+    scalacOptions ++= Seq(
+      "-Xmacro-settings:doobie.driver=org.postgresql.Driver",
+      "-Xmacro-settings:doobie.connect=jdbc:postgresql:world",
+      "-Xmacro-settings:doobie.user=postgres",
+      "-Xmacro-settings:doobie.password="
+    ),
+    libraryDependencies ++= Seq(
+      "org.tpolecat"  %% "doobie-contrib-postgresql" % "0.2.3"
+    ),
+    tutTargetDirectory := (baseDirectory in root).value
+  )
+  .dependsOn(postgres)
+
