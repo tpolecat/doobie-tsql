@@ -3,7 +3,7 @@ package tsql
 import scala.collection.JavaConverters._
 import scala.language.experimental.macros
 import scala.reflect.macros.whitebox.Context
-import shapeless._
+import shapeless.{ HNil, ProductArgs }  
 import macrocompat.bundle
 import doobie.imports._
 import scalaz._, Scalaz._, scalaz.effect.IO
@@ -129,10 +129,36 @@ object TSql {
       val q"tsql.`package`.toTsqlInterpolator(scala.StringContext.apply(..$parts)).tsql" = c.prefix.tree
       val sql = parts.map { case Literal(Constant(s: String)) => s } .mkString("?")
 
+      // If we can get an offset into the SQL string in an error message we need to find it relative
+      // to one of the parts.
+      def offset(n: Int): Option[Position] = {
+        def go(n: Int, ts: List[Tree]): Option[Position] = {
+          // println(s"go($n, ${ts.map(_.pos)})")
+          ts match {
+            case Nil => None
+            case (t @ Literal(Constant(s: String))) :: ts =>
+              val p = t.pos
+              // println(s"start = ${p.point}, len = ${s.length}")
+              if (n < s.length) Some { 
+                val ret = p.withPoint(p.point + n)
+                // println(ret)
+                ret
+              }
+              else go(n - s.length - 2, ts) // add 1 for ?
+          }
+        }
+        go(n, parts)
+      }
+
       // Get column and parameter metadata
       val prog = HC.prepareStatement(sql)(parameterConstraint tuple columnConstraint)
       val ((it, pcount), ot) = prog.transact(xa).attemptSql.unsafePerformIO match {
-        case -\/(e) => c.abort(c.enclosingPosition, e.getMessage)
+        case -\/(e) => //c.abort(c.enclosingPosition, e.getMessage)
+          val pos = parts.head.pos
+          SqlExceptions.pos(e.getMessage) match {
+            case Some((s, n)) => c.abort(offset(n).getOrElse(pos), s)
+            case None         => c.abort(pos, e.getMessage)
+          }        
         case \/-(d) => d
       }
 
@@ -182,5 +208,29 @@ object TSql {
   }
 
 }
+
+
+object SqlExceptions {
+
+  /** 
+   * Try to get the error position from a SQLException message, returning the residual message
+   * without the position information, and the position as a character offset.
+   */
+  def pos(e: String): Option[(String, Int)] = 
+    pgPos(e) // orElse ...
+
+  // org.postgresql.util.PSQLException includes the position in the last line
+  def pgPos(e: String): Option[(String, Int)] = {
+    val Re = """\s+Position: (\d+)""".r
+    e.lines.toList.reverse match {
+      case Re(sp) :: rinit => Some((rinit.reverse.mkString("\n"), sp.toInt - 1))
+      case _                  => None
+    }
+  }
+
+}
+
+
+
 
 

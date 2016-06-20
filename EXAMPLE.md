@@ -12,9 +12,8 @@ Ok. first thing to notice is that SQL literals are checked at compile-time. If t
 ```scala
 scala> tsql"select id, name from country"
 <console>:19: error: ERROR: column "id" does not exist
-  Position: 8
        tsql"select id, name from country"
-       ^
+                   ^
 ```
 
 Ok so how does the compiler know how to do that? At compile-time it goes out and talks to the database using connect info specified via `scalacOptions`.
@@ -60,7 +59,7 @@ Updates can also contain *placeholders*, which results in a fancier return type.
 
 ```scala
 scala> val up = tsql"delete from country where population = ?"
-up: tsql.Update[shapeless.::[tsql.ParameterMeta[Int(4),String("int4"),tsql.NullableUnknown,Int(1)],shapeless.HNil]] = tsql.Update@4bc0ae67
+up: tsql.Update[shapeless.::[tsql.ParameterMeta[Int(4),String("int4"),tsql.NullableUnknown,Int(1)],shapeless.HNil]] = tsql.Update@44217db5
 ```
 
 Ooooookay. So, if we unpack this type it looks like this:
