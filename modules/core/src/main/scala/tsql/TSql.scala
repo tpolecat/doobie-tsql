@@ -129,22 +129,16 @@ object TSql {
       val q"tsql.`package`.toTsqlInterpolator(scala.StringContext.apply(..$parts)).tsql" = c.prefix.tree
       val sql = parts.map { case Literal(Constant(s: String)) => s } .mkString("?")
 
-      // If we can get an offset into the SQL string in an error message we need to find it relative
-      // to one of the parts.
-      def offset(n: Int): Option[Position] = {
+      // Source positon for offset `n` characters into the SQL itself. If the database reports an
+      // error at pos N this method will give you the source position where the carat should go.
+      def sqlPos(n: Int): Option[Position] = {
         def go(n: Int, ts: List[Tree]): Option[Position] = {
-          // println(s"go($n, ${ts.map(_.pos)})")
           ts match {
             case Nil => None
             case (t @ Literal(Constant(s: String))) :: ts =>
               val p = t.pos
-              // println(s"start = ${p.point}, len = ${s.length}")
-              if (n < s.length) Some { 
-                val ret = p.withPoint(p.point + n)
-                // println(ret)
-                ret
-              }
-              else go(n - s.length - 2, ts) // add 1 for ?
+              if (n < s.length) Some(p.withPoint(p.point + n))
+              else go(n - s.length - 2, ts)
           }
         }
         go(n, parts)
@@ -156,7 +150,7 @@ object TSql {
         case -\/(e) => //c.abort(c.enclosingPosition, e.getMessage)
           val pos = parts.head.pos
           SqlExceptions.pos(e.getMessage) match {
-            case Some((s, n)) => c.abort(offset(n).getOrElse(pos), s)
+            case Some((s, n)) => c.abort(sqlPos(n).getOrElse(pos), s)
             case None         => c.abort(pos, e.getMessage)
           }        
         case \/-(d) => d
@@ -190,7 +184,7 @@ object TSql {
 
         // Ok now look it up
         val write = c.inferImplicitValue(need) match {
-          case EmptyTree => c.abort(c.enclosingPosition, "parameter types don't match up, sorry") // TODO: normal error
+          case EmptyTree => c.abort(parts.head.pos, "parameter types don't match up, sorry") // TODO: normal error
           case t         => t
         }
 
@@ -219,7 +213,7 @@ object SqlExceptions {
   def pos(e: String): Option[(String, Int)] = 
     pgPos(e) // orElse ...
 
-  // org.postgresql.util.PSQLException includes the position in the last line
+  // org.postgresql.util.PSQLException includes the 1-indexed position in the last line
   def pgPos(e: String): Option[(String, Int)] = {
     val Re = """\s+Position: (\d+)""".r
     e.lines.toList.reverse match {

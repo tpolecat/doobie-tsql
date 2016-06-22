@@ -7,13 +7,13 @@ Same setup as with normal doobie, but we also import `tsql._`. We're using the s
 import doobie.imports._, tsql._
 ```
 
-Ok. first thing to notice is that SQL literals are checked at compile-time. If the SQL doesn't make sense to the database it won't compile.
+Ok. first thing to notice is that SQL literals are checked at compile-time. If the SQL doesn't make sense to the database it won't compile. If the error from the server contains an offset we can position the carat in the right place (only works for Postgres at the moment).
 
 ```tut:fail
 tsql"select id, name from country"
 ```
 
-Ok so how does the compiler know how to do that? At compile-time it goes out and talks to the database using connect info specified via `scalacOptions`.
+Ok so how does that work? At compile-time the compiler goes out and talks to the database using connect info specified via `scalacOptions`.
 
 ```scala
 scalacOptions ++= Seq(

@@ -7,7 +7,7 @@ Same setup as with normal doobie, but we also import `tsql._`. We're using the s
 import doobie.imports._, tsql._
 ```
 
-Ok. first thing to notice is that SQL literals are checked at compile-time. If the SQL doesn't make sense to the database it won't compile.
+Ok. first thing to notice is that SQL literals are checked at compile-time. If the SQL doesn't make sense to the database it won't compile. If the error from the server contains an offset we can position the carat in the right place (only works for Postgres at the moment).
 
 ```scala
 scala> tsql"select id, name from country"
@@ -16,7 +16,7 @@ scala> tsql"select id, name from country"
                    ^
 ```
 
-Ok so how does the compiler know how to do that? At compile-time it goes out and talks to the database using connect info specified via `scalacOptions`.
+Ok so how does that work? At compile-time the compiler goes out and talks to the database using connect info specified via `scalacOptions`.
 
 ```scala
 scalacOptions ++= Seq(
@@ -52,14 +52,14 @@ Note that a type mismatch in the SQL is a compiler error. The error message isn'
 scala> tsql"delete from country where population = $c"
 <console>:20: error: parameter types don't match up, sorry
        tsql"delete from country where population = $c"
-       ^
+            ^
 ```
 
 Updates can also contain *placeholders*, which results in a fancier return type.
 
 ```scala
 scala> val up = tsql"delete from country where population = ?"
-up: tsql.Update[shapeless.::[tsql.ParameterMeta[Int(4),String("int4"),tsql.NullableUnknown,Int(1)],shapeless.HNil]] = tsql.Update@44217db5
+up: tsql.Update[shapeless.::[tsql.ParameterMeta[Int(4),String("int4"),tsql.NullableUnknown,Int(1)],shapeless.HNil]] = tsql.Update@8ca4fb2
 ```
 
 Ooooookay. So, if we unpack this type it looks like this:
