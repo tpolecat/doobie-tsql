@@ -14,6 +14,7 @@ What's missing:
 
 - [ ] Updates returning generated keys.
 - [ ] Bulk updates.
+- [ ] Process
 - [ ] `in` clauses.
 
 

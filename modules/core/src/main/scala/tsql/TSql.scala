@@ -129,6 +129,16 @@ object TSql {
       val q"tsql.`package`.toTsqlInterpolator(scala.StringContext.apply(..$parts)).tsql" = c.prefix.tree
       val sql = parts.map { case Literal(Constant(s: String)) => s } .mkString("?")
 
+      // For returning columns we use a comment. If returned columns are specified then the
+      // statement must not have any output columns otherwise. The resulting QueryIO/QueryO will
+      // have an output type of Any.
+      val retPat = "-- returning"
+      val returning: List[String] = 
+        sql.lines.toList.fproduct(_.indexOf(retPat)).find(_._2 >= 0).foldMap { case (s, i) =>
+          s.substring(i + retPat.length).split(",").toList.map(_.trim)
+        }
+      println("RETURNING " + returning)
+
       // Source positon for offset `n` characters into the SQL itself. If the database reports an
       // error at pos N this method will give you the source position where the carat should go.
       def sqlPos(n: Int): Option[Position] = {
@@ -144,7 +154,8 @@ object TSql {
         go(n, parts)
       }
 
-      // Get column and parameter metadata
+      // Get column and parameter metadata. Note that preparing the statement with `returning`
+      // columns doesn't do anything; they don't appear in metadata for some reason.
       val prog = HC.prepareStatement(sql)(parameterConstraint tuple columnConstraint)
       val ((it, pcount), ot) = prog.transact(xa).attemptSql.unsafePerformIO match {
         case -\/(e) => //c.abort(c.enclosingPosition, e.getMessage)
