@@ -24,16 +24,36 @@ object PGInferenceSpec extends Specification {
       checkType[ConnectionIO[Int]](a)
     }
 
-    "infer ConnectionIO[Int] for parameterized update with interpolated arguments" in {
+    "infer UpdateO[«fancy»] for an non-parameterized update w/ columns" in {
+      val a = tsql"delete from country -- returning code, name"
+      checkType[UpdateO[Any :: Any :: HNil]](a)
+    }
+
+    "infer ConnectionIO[Int] for parameterized update w/ interpolated arguments" in {
       val s = "irrelevant"
       val a = tsql"delete from country where name like $s"
       checkType[ConnectionIO[Int]](a)
     }
 
-    "infer Update[«fancy»] for parameterized update with placeholders" in {
+
+    "infer UpdateO[«fancy»] for parameterized update w/ interpolated arguments and columns" in {
+      val s = "irrelevant"
+      val a = tsql"delete from country where name like $s -- returning code, name"
+      checkType[UpdateO[Any :: Any :: HNil]](a)
+    }
+
+    "infer UpdateI[«fancy»] for parameterized update w/ placeholders" in {
       val a = tsql"delete from country where name like ?"
       checkType[UpdateI[
         ParameterMeta[JdbcVarChar, PGtext, NullableUnknown, W.`1`.T] :: HNil
+      ]](a)
+    }
+
+    "infer UpdateIO[«fancy», «fancy»] for parameterized update w/ placeholders and columns" in {
+      val a = tsql"delete from country where name like ? -- returning code, name"
+      checkType[UpdateIO[
+        ParameterMeta[JdbcVarChar, PGtext, NullableUnknown, W.`1`.T] :: HNil,
+        Any :: Any :: HNil
       ]](a)
     }
 
@@ -46,7 +66,7 @@ object PGInferenceSpec extends Specification {
       ]](a)
     }
 
-    "infer QueryO[«fancy»] for parameterized select with interpolated arguments" in {
+    "infer QueryO[«fancy»] for parameterized select w/ interpolated arguments" in {
       val s = "irrelevant"
       val a = tsql"select name, population from city where countrycode = $s"
       checkType[QueryO[
@@ -56,7 +76,7 @@ object PGInferenceSpec extends Specification {
       ]](a)
     }
 
-    "infer QueryIO[«fancy», «fancy»] for parameterized select with placeholders" in {
+    "infer QueryIO[«fancy», «fancy»] for parameterized select w/ placeholders" in {
       val a = tsql"select name, population from city where countrycode = ?"
       checkType[QueryIO[
         ParameterMeta[JdbcChar, PGbpchar, NullableUnknown, W.`1`.T] ::

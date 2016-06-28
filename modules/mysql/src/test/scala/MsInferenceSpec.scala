@@ -24,15 +24,36 @@ object PGInferenceSpec extends Specification {
       checkType[ConnectionIO[Int]](a)
     }
 
-    "infer ConnectionIO[Int] for parameterized update with interpolated arguments" in {
+    "infer UpdateO[«fancy»] for an non-parameterized update w/ columns" in {
+      val a = tsql"delete from country -- returning code, name"
+      checkType[UpdateO[Any :: Any :: HNil]](a)
+    }
+
+    "infer ConnectionIO[Int] for parameterized update w/ interpolated arguments" in {
       val s = "irrelevant"
       val a = tsql"delete from country where name like $s"
       checkType[ConnectionIO[Int]](a)
     }
 
-    "infer Update[Any] for parameterized update with placeholders" in {
+
+    "infer UpdateO[«fancy»] for parameterized update w/ interpolated arguments and columns" in {
+      val s = "irrelevant"
+      val a = tsql"delete from country where name like $s -- returning code, name"
+      checkType[UpdateO[Any :: Any :: HNil]](a)
+    }
+
+    "infer UpdateI[Any] for parameterized update w/ placeholders" in {
       val a = tsql"delete from country where name like ?"
       checkType[UpdateI[Any]](a)
+    }
+
+
+    "infer UpdateIO[any, «fancy»] for parameterized update w/ placeholders and columns" in {
+      val a = tsql"delete from country where name like ? -- returning code, name"
+      checkType[UpdateIO[
+        Any,
+        Any :: Any :: HNil
+      ]](a)
     }
 
     "infer QueryO[«fancy»] for non-parameterized select" in {
@@ -44,7 +65,7 @@ object PGInferenceSpec extends Specification {
       ]](a)
     }
 
-    "infer QueryO[«fancy»] for parameterized select with interpolated arguments" in {
+    "infer QueryO[«fancy»] for parameterized select w/ interpolated arguments" in {
       val s = "irrelevant"
       val a = tsql"select xname, population from city where countrycode = $s"
       checkType[QueryO[
@@ -54,7 +75,7 @@ object PGInferenceSpec extends Specification {
       ]](a)
     }
 
-    "infer QueryIO[Any, «fancy»] for parameterized select with placeholders" in {
+    "infer QueryIO[Any, «fancy»] for parameterized select w/ placeholders" in {
       val a = tsql"select xname, population from city where countrycode = ?"
       checkType[QueryIO[
         Any,
