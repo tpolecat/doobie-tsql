@@ -29,25 +29,21 @@ package object amm {
 
   implicit def paramererMetaTPrint[
     J <: Int     : TPrint, // JDBC Type
-    S <: String  : TPrint, // Schema Type
-    N <: Nullity : TPrint, // Nullability
-    M <: Int     : TPrint  // Mode
-  ]: TPrint[ParameterMeta[J, S, N, M]] =
+    S <: String  : TPrint  // Schema Type
+  ]: TPrint[ParameterMeta[J, S]] =
     TPrint.lambda { implicit cfg =>
-      val (j, s, n, m) = (jdbc[J], tprint[S], tprint[N], tprint[M])
+      val (j, s) = (jdbc[J], tprint[S])
       val cm = TPrint.literal("ParameterMeta").render(cfg)
-      s"""$cm[$j, $s, $n, $m]"""
+      s"""$cm[$j, $s]"""
     }
 
   implicit def paramhconsBlahblah[
     J <: Int     : TPrint, // JDBC Type
     S <: String  : TPrint, // Schema Type
-    N <: Nullity : TPrint, // Nullability
-    M <: Int     : TPrint,  // Mode
     L <: HList   : TPrint
-  ]: TPrint[ParameterMeta[J, S, N, M] :: L] =
+  ]: TPrint[ParameterMeta[J, S] :: L] =
     TPrint.lambda { implicit cfg =>
-      "  " + tprint[ParameterMeta[J, S, N, M]] + " ::\n" ++ tprint[L]
+      "  " + tprint[ParameterMeta[J, S]] + " ::\n" ++ tprint[L]
     }
 
   implicit def columnMetaTPrint[

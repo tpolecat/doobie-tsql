@@ -43,14 +43,14 @@ object H2InferenceSpec extends Specification {
     "infer UpdateI[«fancy»] for parameterized update w/ placeholders" in {
       val a = tsql"delete from country where name like ?"
       checkType[UpdateI[
-        ParameterMeta[JdbcVarChar, H2VARCHAR, NullableUnknown, W.`1`.T] :: HNil
+        ParameterMeta[JdbcVarChar, H2VARCHAR] :: HNil
       ]](a)
     }
 
     "infer UpdateIO[«fancy», «fancy»] for parameterized update w/ placeholders and columns" in {
       val a = tsql"delete from country where name like ? -- returning code, name"
       checkType[UpdateIO[
-        ParameterMeta[JdbcVarChar, H2VARCHAR, NullableUnknown, W.`1`.T] :: HNil,
+        ParameterMeta[JdbcVarChar, H2VARCHAR] :: HNil,
         Any :: Any :: HNil
       ]](a)
     }
@@ -77,7 +77,7 @@ object H2InferenceSpec extends Specification {
     "infer QueryIO[«fancy», «fancy»] for parameterized select w/ placeholders" in {
       val a = tsql"select name, population from city where countrycode = ?"
       checkType[QueryIO[
-        ParameterMeta[JdbcChar, H2CHAR, NullableUnknown, W.`1`.T] ::
+        ParameterMeta[JdbcChar, H2CHAR] ::
         HNil,
         ColumnMeta[JdbcVarChar, H2VARCHAR, NoNulls, W.`"CITY"`.T, W.`"NAME"`      .T]  ::
         ColumnMeta[JdbcInteger, H2INTEGER, NoNulls, W.`"CITY"`.T, W.`"POPULATION"`.T]  ::
@@ -98,7 +98,7 @@ object H2InferenceSpec extends Specification {
       val a = tsql"select ?::INTEGER as foo"
       checkType[QueryIO[
         // Interestingly the param is a varchar ... hm
-        ParameterMeta[JdbcVarChar, H2VARCHAR, NullableUnknown, W.`1`.T] ::
+        ParameterMeta[JdbcVarChar, H2VARCHAR] ::
         HNil,
         ColumnMeta[JdbcInteger, H2INTEGER, NullableUnknown, W.`""`.T, W.`"FOO"`.T] ::
         HNil]](a)

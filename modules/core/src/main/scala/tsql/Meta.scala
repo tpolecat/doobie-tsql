@@ -9,8 +9,11 @@ trait ColumnMeta[
 ]
 
 trait ParameterMeta[
-  -J <: Int,     // JDBC Type
-  -S <: String,  // Schema Type
-  -N <: Nullity, // Nullability
-  -M <: Int      // Parameter Mode
+  -J <: Int,   // JDBC Type
+  -S <: String // Schema Type
+
+  // N.B. Nullability is always Unknown and mode is always IN so there's no point including them. 
+  // -N <: Nullity, // Nullability
+  // -M <: Int      // Parameter Mode
+
 ]

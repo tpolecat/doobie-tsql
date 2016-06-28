@@ -29,7 +29,7 @@ object Write extends WriteDerivations with WriteInstances {
 
   def basic[J <: Int] = new BasicPartiallyApplied[J]
   class BasicPartiallyApplied[J <: Int] {
-    def apply[A](f: (PreparedStatement, Int, A) => Unit): Write[ParameterMeta[J, String, NoNulls, Int], A] =
+    def apply[A](f: (PreparedStatement, Int, A) => Unit): Write[ParameterMeta[J, String], A] =
       lift(f)
   }
 
@@ -37,10 +37,10 @@ object Write extends WriteDerivations with WriteInstances {
 
 trait WriteDerivations {
 
-  implicit def option[J <: Int : Witness.Aux, S <: String, M <: Int, A](
-    implicit ev: Write[ParameterMeta[J, S, NoNulls, M], A],
+  implicit def option[J <: Int : Witness.Aux, S <: String, A](
+    implicit ev: Write[ParameterMeta[J, S], A],
              no: A <:!< Option[X] forSome { type X }
-  ): Write[ParameterMeta[J, S, Nullity, M], Option[A]] =
+  ): Write[ParameterMeta[J, S], Option[A]] =
     Write.lift { 
       case (rs, n, Some(a)) => ev.unsafeSet(rs, n, a)
       case (rs, n, None)    => rs.setNull(n, JdbcType.valueOf[J]) //, JdbcType.valueOf[S]) hmm..

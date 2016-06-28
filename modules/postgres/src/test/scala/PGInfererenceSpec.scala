@@ -45,14 +45,14 @@ object PGInferenceSpec extends Specification {
     "infer UpdateI[«fancy»] for parameterized update w/ placeholders" in {
       val a = tsql"delete from country where name like ?"
       checkType[UpdateI[
-        ParameterMeta[JdbcVarChar, PGtext, NullableUnknown, W.`1`.T] :: HNil
+        ParameterMeta[JdbcVarChar, PGtext] :: HNil
       ]](a)
     }
 
     "infer UpdateIO[«fancy», «fancy»] for parameterized update w/ placeholders and columns" in {
       val a = tsql"delete from country where name like ? -- returning code, name"
       checkType[UpdateIO[
-        ParameterMeta[JdbcVarChar, PGtext, NullableUnknown, W.`1`.T] :: HNil,
+        ParameterMeta[JdbcVarChar, PGtext] :: HNil,
         Any :: Any :: HNil
       ]](a)
     }
@@ -79,7 +79,7 @@ object PGInferenceSpec extends Specification {
     "infer QueryIO[«fancy», «fancy»] for parameterized select w/ placeholders" in {
       val a = tsql"select name, population from city where countrycode = ?"
       checkType[QueryIO[
-        ParameterMeta[JdbcChar, PGbpchar, NullableUnknown, W.`1`.T] ::
+        ParameterMeta[JdbcChar, PGbpchar] ::
         HNil,
         ColumnMeta[JdbcVarChar, PGvarchar, NoNulls, W.`"city"`.T, W.`"name"`      .T]  ::
         ColumnMeta[JdbcInteger, PGint4,    NoNulls, W.`"city"`.T, W.`"population"`.T]  ::
@@ -99,7 +99,7 @@ object PGInferenceSpec extends Specification {
     "infer NullableUnknown for typed placeholder" in {
       val a = tsql"select ?::Int4 as foo"
       checkType[QueryIO[
-        ParameterMeta[JdbcInteger, PGint4, NullableUnknown, W.`1`.T] ::
+        ParameterMeta[JdbcInteger, PGint4] ::
         HNil,
         ColumnMeta[JdbcInteger, PGint4, NullableUnknown, W.`""`.T, W.`"foo"`.T] ::
         HNil]](a)

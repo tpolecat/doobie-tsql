@@ -96,9 +96,7 @@ object TSql {
           (packHList((1 to md.getParameterCount).toList.map { i =>
             val j = md.getParameterType(i)
             val s = md.getParameterTypeName(i)
-            val n = md.isNullable(i)
-            val m = md.getParameterMode(i)
-            c.typecheck(tq"ParameterMeta[$j, $s, ${jdbcNullabilityType(n)}, $m]", c.TYPEmode).tpe
+            c.typecheck(tq"ParameterMeta[$j, $s]", c.TYPEmode).tpe
           }), md.getParameterCount)
       } .exceptSql { e =>
 
