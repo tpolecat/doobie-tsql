@@ -12,8 +12,8 @@ The high points:
 
 What's missing:
 
-- [ ] Updates returning generated keys.
-- [ ] Bulk updates.
+- [x] Updates returning generated keys.
+- [x] Bulk updates.
 - [ ] Process
 - [ ] `in` clauses.
 

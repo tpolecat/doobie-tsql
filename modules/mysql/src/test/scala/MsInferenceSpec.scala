@@ -32,7 +32,7 @@ object PGInferenceSpec extends Specification {
 
     "infer Update[Any] for parameterized update with placeholders" in {
       val a = tsql"delete from country where name like ?"
-      checkType[Update[Any]](a)
+      checkType[UpdateI[Any]](a)
     }
 
     "infer QueryO[«fancy»] for non-parameterized select" in {

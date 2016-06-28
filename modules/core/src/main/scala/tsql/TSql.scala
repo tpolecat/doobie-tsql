@@ -137,7 +137,9 @@ object TSql {
         sql.lines.toList.fproduct(_.indexOf(retPat)).find(_._2 >= 0).foldMap { case (s, i) =>
           s.substring(i + retPat.length).split(",").toList.map(_.trim)
         }
-      println("RETURNING " + returning)
+      val rot = packHList(returning.as(AnyType)) // returning 'out' type can check arity and nothing else
+
+      // TODO: remove comment from sql since it messes with postgres (at least)
 
       // Source positon for offset `n` characters into the SQL itself. If the database reports an
       // error at pos N this method will give you the source position where the carat should go.
@@ -166,7 +168,7 @@ object TSql {
           }        
         case \/-(d) => d
       }
-
+   
       // TODO: get rid of repetition of the it =:= HNil cases.
 
       // There are two cases. If there is only one string literal "part" then there are no
@@ -175,11 +177,15 @@ object TSql {
       if (parts.length == 1) {
 
         // Done!
-        (it, ot) match {
-          case (HNilType, HNilType) => q"doobie.imports.HC.prepareStatement($sql)(doobie.imports.HPS.executeUpdate)"
-          case (_       , HNilType) => q"new tsql.Update[$it]($sql)"
-          case (HNilType, _       ) => q"new tsql.QueryO[$ot]($sql, doobie.imports.HPS.delay(()))"
-          case (_       , _       ) => q"new tsql.QueryIO[$it, $ot]($sql)"
+        (it, ot, rot) match {
+          case (HNilType, HNilType, HNilType) => q"doobie.imports.HC.prepareStatement($sql)(doobie.imports.HPS.executeUpdate)"
+          case (HNilType, HNilType, _       ) => q"new tsql.UpdateO[$rot]($sql, $returning)"
+          case (_       , HNilType, HNilType) => q"new tsql.UpdateI[$it]($sql)"
+          case (_       , HNilType, _       ) => q"new tsql.UpdateIO[$it,$rot]($sql, $returning)"
+          case (HNilType, _       , HNilType) => q"new tsql.QueryO[$ot]($sql)"
+          case (_       , _       , HNilType) => q"new tsql.QueryIO[$it, $ot]($sql)"
+          case _ => 
+            c.abort(c.enclosingPosition, "A statement that returns columns cannot also have a `-- returning ...` pragma.")
         }
 
       } else {
@@ -200,11 +206,15 @@ object TSql {
         }
 
         // Done!
-        (it, ot) match {
-          case (HNilType, HNilType) => q"doobie.imports.HC.prepareStatement($sql)(doobie.imports.HPS.executeUpdate)"
-          case (_       , HNilType) => q"(new tsql.Update[$it]($sql)).applyProduct($a)($write)"
-          case (HNilType, _       ) => q"new tsql.QueryO[$ot]($sql, doobie.imports.HPS.delay(()))"
-          case (_       , _       ) => q"(new tsql.QueryIO[$it, $ot]($sql)).applyProduct($a)($write)"
+       (it, ot, rot) match {
+          case (HNilType, HNilType, HNilType) => q"doobie.imports.HC.prepareStatement($sql)(doobie.imports.HPS.executeUpdate)"
+          case (HNilType, HNilType, _       ) => q"new tsql.UpdateO[$rot]($sql, $returning)"
+          case (_       , HNilType, HNilType) => q"new tsql.UpdateI[$it]($sql).applyProduct($a)($write)"
+          case (_       , HNilType, _       ) => q"new tsql.UpdateIO[$it,$rot]($sql, $returning).applyProduct($a)($write)"
+          case (HNilType, _       , HNilType) => q"new tsql.QueryO[$ot]($sql)"
+          case (_       , _       , HNilType) => q"new tsql.QueryIO[$it, $ot]($sql).applyProduct($a)($write)"
+          case _ => 
+            c.abort(c.enclosingPosition, "A statement that returns columns cannot also have a `-- returning ...` pragma.")
         }
 
       }

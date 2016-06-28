@@ -32,7 +32,7 @@ object PGInferenceSpec extends Specification {
 
     "infer Update[«fancy»] for parameterized update with placeholders" in {
       val a = tsql"delete from country where name like ?"
-      checkType[Update[
+      checkType[UpdateI[
         ParameterMeta[JdbcVarChar, PGtext, NullableUnknown, W.`1`.T] :: HNil
       ]](a)
     }

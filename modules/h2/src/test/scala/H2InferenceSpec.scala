@@ -31,7 +31,7 @@ object H2InferenceSpec extends Specification {
 
     "infer Update[«fancy»] for parameterized update with placeholders" in {
       val a = tsql"delete from country where name like ?"
-      checkType[Update[
+      checkType[UpdateI[
         ParameterMeta[JdbcVarChar, H2VARCHAR, NullableUnknown, W.`1`.T] :: HNil
       ]](a)
     }

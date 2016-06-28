@@ -6,7 +6,7 @@ import scala.collection.generic.CanBuildFrom
 import scalaz._, Scalaz._
 
 // i can read the whole resultset into an FA
-case class ReadResult[O, FA](run: ResultSetIO[FA]) // TODO: ResultSetIO[FA]
+case class ReadResult[+O, FA](run: ResultSetIO[FA]) // TODO: ResultSetIO[FA]
 
 object ReadResult {
 
