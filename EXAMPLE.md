@@ -36,7 +36,7 @@ scalacOptions ++= Seq(
 
 Ok so the big difference betweeen the `sql` interpolator and the `tsql` interpolator is that the latter infers interesting types.
 
-### Inference 1. Simple Updates
+### Simple Updates
 
 The inferred type of a `tsql` literal is potentially fancy, but in some cases can be trivial. In the case of an unconditional update the computation is fully specified: there are no parameters and nothing returned other than a row count. So the inferred type is `ConnectionIO[Int]`.
 
@@ -68,7 +68,7 @@ The following update contain a `?` placeholder, yielding a fancier type.
 
 ```scala
 scala> val up = tsql"delete from country where population = ?"
-up: tsql.UpdateI[shapeless.::[tsql.ParameterMeta[Int(4),String("int4")],shapeless.HNil]] = tsql.UpdateI@7c1f4189
+up: tsql.UpdateI[shapeless.::[tsql.ParameterMeta[Int(4),String("int4")],shapeless.HNil]] = tsql.UpdateI@7290dbdb
 ```
 
 If we unpack this type and rewrite the singletons to be more readable it looks like this:
@@ -99,7 +99,7 @@ Multi-parameter placeholder queries become `UpdateI`s that take multiple argumen
 
 ```scala
 scala> val up = tsql"update country set name = ? where code = ? or population > ?"
-up: tsql.UpdateI[shapeless.::[tsql.ParameterMeta[Int(12),String("varchar")],shapeless.::[tsql.ParameterMeta[Int(1),String("bpchar")],shapeless.::[tsql.ParameterMeta[Int(4),String("int4")],shapeless.HNil]]]] = tsql.UpdateI@63e5f417
+up: tsql.UpdateI[shapeless.::[tsql.ParameterMeta[Int(12),String("varchar")],shapeless.::[tsql.ParameterMeta[Int(1),String("bpchar")],shapeless.::[tsql.ParameterMeta[Int(4),String("int4")],shapeless.HNil]]]] = tsql.UpdateI@3f96146a
 ```
 
 The type cleans up to be:
@@ -122,13 +122,13 @@ res8: doobie.imports.ConnectionIO[Int] = Gosub()
 ```
 
 
-### Inference 2: Selects
+### Simple Selects
 
 `SELECT` statements have fancy types describing the output columns in addition to any input parameters.
 
 ```scala
 scala> val q = tsql"select code, name, population from country"
-q: tsql.QueryO[shapeless.::[tsql.ColumnMeta[Int(1),String("bpchar"),tsql.NoNulls,String("country"),String("code")],shapeless.::[tsql.ColumnMeta[Int(12),String("varchar"),tsql.NoNulls,String("country"),String("name")],shapeless.::[tsql.ColumnMeta[Int(4),String("int4"),tsql.NoNulls,String("country"),String("population")],shapeless.HNil]]]] = tsql.QueryO@6312336f
+q: tsql.QueryO[shapeless.::[tsql.ColumnMeta[Int(1),String("bpchar"),tsql.NoNulls,String("country"),String("code")],shapeless.::[tsql.ColumnMeta[Int(12),String("varchar"),tsql.NoNulls,String("country"),String("name")],shapeless.::[tsql.ColumnMeta[Int(4),String("int4"),tsql.NoNulls,String("country"),String("population")],shapeless.HNil]]]] = tsql.QueryO@8029b63
 ```
 
 Let's look at this type more closely:
@@ -191,6 +191,36 @@ We can also ask for a `.unique` or `.option` result as with the existing `sql` i
 ```scala
 scala> tsql"select name, population from city where id = 42".unique[(String, Int)]
 res14: doobie.imports.ConnectionIO[(String, Int)] = Gosub()
+
+scala> tsql"select name, population from city where id = 42".option[(String, Int)]
+res15: doobie.imports.ConnectionIO[Option[(String, Int)]] = Gosub()
 ```
+
+And as with the current `sql` interpolator we can ask for a `Process`.
+
+```scala
+scala> tsql"select name, population from city where id = 42".process[(String, Int)]
+res16: scalaz.stream.Process[doobie.imports.ConnectionIO,(String, Int)] = Append(Halt(End),Vector(<function1>))
+```
+
+### Parameterized Selects
+
+
+### Updates Returning Columns
+
+
+### Understanding Column and Parameter Constraints
+
+- explain the variance
+- note the MySQL issue
+
+### Custom Type Mappings
+
+- simple co/contravariant mappints
+- schema-constrained mappings
+
+### Using TPrint
+
+
 
 

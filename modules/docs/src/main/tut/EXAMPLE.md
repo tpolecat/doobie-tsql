@@ -154,9 +154,14 @@ We can also ask for a `.unique` or `.option` result as with the existing `sql` i
 
 ```tut
 tsql"select name, population from city where id = 42".unique[(String, Int)]
+tsql"select name, population from city where id = 42".option[(String, Int)]
 ```
 
-> TODO: Streaming
+And as with the current `sql` interpolator we can ask for a `Process`.
+
+```tut
+tsql"select name, population from city where id = 42".process[(String, Int)]
+```
 
 ### Parameterized Selects
 
