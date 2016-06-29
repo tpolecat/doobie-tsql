@@ -8,12 +8,12 @@ import scalaz.Coyoneda
 import JdbcType._
 
 /** 
- * Witness that we can read a column value of type `A` while satisfy constraints `M` or any
+ * Witness that we can read a column value of type `A` while satisfy constraints `O` or any
  * more specific constraint. 
  */
-final class Read[+M, A](val run: Coyoneda[(ResultSet, Int) => ?, A]) {
+final class Read[+O, A](val run: Coyoneda[(ResultSet, Int) => ?, A]) {
 
-  def map[B](f: A => B): Read[M, B] =
+  def map[B](f: A => B): Read[O, B] =
     new Read(run.map(f))
 
   def unsafeGet(rs: ResultSet, n: Int): A =
@@ -26,7 +26,7 @@ final class Read[+M, A](val run: Coyoneda[(ResultSet, Int) => ?, A]) {
 
 object Read extends ReadInstances {
 
-  def lift[M, A](f: (ResultSet, Int) => A): Read[M, A] =
+  def lift[O, A](f: (ResultSet, Int) => A): Read[O, A] =
     new Read(Coyoneda.lift[(ResultSet, Int) => ?, A](f))
 
   /** Construct a single-column Read asserting conformance with ColumnMeta[J, *, NoNulls]. */
@@ -35,10 +35,6 @@ object Read extends ReadInstances {
     def apply[A](f: (ResultSet, Int) => A): Read[ColumnMeta[J, String, NoNulls, String, String], A] =
       lift(f)
   }
-
-  // TODO: get rid of
-  def advanced[J <: Int, S <: String, A](f: (ResultSet, Int) => A): Read[ColumnMeta[J, S, NoNulls, String, String], A] =
-    lift(f)
 
 }
 
@@ -118,30 +114,30 @@ trait ReadDerivations extends ReadDerivations1 {
   ): Read[MH :: MT, H :: T] = 
     Read.lift((rs, n) => h.unsafeGet(rs, n) :: t.value.unsafeGet(rs, n + 1))
 
-  implicit def readGeneric[M, A, B](
+  implicit def readGeneric[O, A, B](
     implicit g: Generic.Aux[A, B], 
-             r: Lazy[Read[M, B]]
-   ): Read[M, A] =
+             r: Lazy[Read[O, B]]
+   ): Read[O, A] =
     Read.lift((rs, n) => g.from(r.value.unsafeGet(rs, n)))
 
 }
 
 trait ReadDerivations1 extends ReadDerivations2 {
 
-  // We want to be able to derive instance Read[M, A :: ... :: HNil] where we need to expand A via
-  // Generic, assuming we can derive Read[M, A0 :: A1 :: A2 :: ... :: HNil] with A's components.
-  implicit def hconsG[M, H, HG <: HList, T <: HList, O <: HList](
+  // We want to be able to derive instance Read[O, A :: ... :: HNil] where we need to expand A via
+  // Generic, assuming we can derive Read[O, A0 :: A1 :: A2 :: ... :: HNil] with A's components.
+  implicit def hconsG[O, H, HG <: HList, T <: HList, A <: HList](
     implicit g: Generic.Aux[H, HG],
-             p: Concat.Aux[HG, T, O],
-             r: Read[M, O]
-  ): Read[M, H :: T] = 
+             p: Concat.Aux[HG, T, A],
+             r: Read[O, A]
+  ): Read[O, H :: T] = 
     Read.lift { (rs, n) =>
       val (hg, t) = p.unapply(r.unsafeGet(rs, n))
       g.from(hg) :: t
     }
 
-  implicit def unitary[M, A](implicit ev: Read[M, A]): Read[M :: HNil, A] =
-    ev.asInstanceOf[Read[M :: HNil, A]]
+  implicit def unitary[O, A](implicit ev: Read[O, A]): Read[O :: HNil, A] =
+    ev.asInstanceOf[Read[O :: HNil, A]]
 
 }
 

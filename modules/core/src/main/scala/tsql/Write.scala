@@ -8,9 +8,9 @@ import JdbcType._
 
 import scala.annotation.unchecked.uncheckedVariance
 
-final class Write[+M, -A](val run: ContravariantCoyoneda[(PreparedStatement, Int, ?) => Unit, A @uncheckedVariance]) {
+final class Write[+I, -A](val run: ContravariantCoyoneda[(PreparedStatement, Int, ?) => Unit, A @uncheckedVariance]) {
 
-  def contramap[B](f: B => A): Write[M, B] =
+  def contramap[B](f: B => A): Write[I, B] =
     new Write(run.contramap(f))
 
   def unsafeSet(rs: PreparedStatement, n: Int, a: A): Unit =
@@ -24,7 +24,7 @@ final class Write[+M, -A](val run: ContravariantCoyoneda[(PreparedStatement, Int
 
 object Write extends WriteDerivations with WriteInstances {
 
-  def lift[M, A](f: (PreparedStatement, Int, A) => Unit): Write[M, A] =
+  def lift[I, A](f: (PreparedStatement, Int, A) => Unit): Write[I, A] =
     new Write(ContravariantCoyoneda.lift[(PreparedStatement, Int, ?) => Unit, A](f))
 
   def basic[J <: Int] = new BasicPartiallyApplied[J]
@@ -61,10 +61,10 @@ trait WriteDerivations {
       t.value.unsafeSet(rs, n + 1, l.tail)
     }
 
-  implicit def writeGeneric[M, A, B](
+  implicit def writeGeneric[I, A, B](
     implicit g: Generic.Aux[A, B], 
-             r: Lazy[Write[M, B]]
-   ): Write[M, A] =
+             r: Lazy[Write[I, B]]
+   ): Write[I, A] =
     Write.lift((rs, n, a) => r.value.unsafeSet(rs, n, g.to(a)))
 
 }
