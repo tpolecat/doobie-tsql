@@ -158,7 +158,13 @@ lazy val docs = project.in(file("modules/docs"))
     libraryDependencies ++= Seq(
       "org.tpolecat"  %% "doobie-contrib-postgresql" % "0.2.3"
     ),
-    tutTargetDirectory := (baseDirectory in root).value
+    tutTargetDirectory := (baseDirectory in root).value,
+    tut := {
+      val data = tut.value
+      data.map(_._2).foreach(println)
+      // TODO: remove lines that look like `scala> tp(...)`
+      data
+    }
   )
   .dependsOn(postgres)
 

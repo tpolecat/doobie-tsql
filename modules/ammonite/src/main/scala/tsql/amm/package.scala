@@ -6,11 +6,11 @@ import java.sql.Types._
 
 package object amm {
 
+  // We don't want to make this public
+  implicit val hnilBlah: TPrint[HNil] =
+    TPrint.literal("  HNil")
 
-
-
-
-  implicit def q1TPrint[I: TPrint, O: TPrint]: TPrint[QueryIO[I, O]] =
+  implicit def QueryIOTprint[I: TPrint, O: TPrint]: TPrint[QueryIO[I, O]] =
     TPrint.lambda { implicit cfg =>
       val ts = TPrint.literal("QueryIO").render(cfg)
       val (i, o) = (tprint[I], tprint[O])
@@ -19,7 +19,7 @@ package object amm {
       s"QueryIO[\n$i0,\n$o0\n]"
     }
 
-  implicit def qoTPrint[O: TPrint]: TPrint[QueryO[O]] =
+  implicit def QueryOTPrint[O: TPrint]: TPrint[QueryO[O]] =
     TPrint.lambda { implicit cfg =>
       val ts = TPrint.literal("QueryO").render(cfg)
       val o = tprint[O]
@@ -27,7 +27,33 @@ package object amm {
       s"QueryO[\n$o0\n]"
     }
 
-  implicit def paramererMetaTPrint[
+
+  implicit def UpdateIOTprint[I: TPrint, O: TPrint]: TPrint[UpdateIO[I, O]] =
+    TPrint.lambda { implicit cfg =>
+      val ts = TPrint.literal("UpdateIO").render(cfg)
+      val (i, o) = (tprint[I], tprint[O])
+      val i0 = brack(realign(i, 4), 2)
+      val o0 = brack(realign(o, 5), 2)
+      s"UpdateIO[\n$i0,\n$o0\n]"
+    }
+
+  implicit def UpdateOTPrint[O: TPrint]: TPrint[UpdateO[O]] =
+    TPrint.lambda { implicit cfg =>
+      val ts = TPrint.literal("UpdateO").render(cfg)
+      val o = tprint[O]
+      val o0 = brack(realign(o, 5), 2)
+      s"UpdateO[\n$o0\n]"
+    }
+
+  implicit def UpdateITPrint[I: TPrint]: TPrint[UpdateI[I]] =
+    TPrint.lambda { implicit cfg =>
+      val ts = TPrint.literal("UpdateI").render(cfg)
+      val o = tprint[I]
+      val o0 = brack(realign(o, 5), 2)
+      s"UpdateI[\n$o0\n]"
+    }
+
+  implicit def ParameterMetaTPrint[
     J <: Int     : TPrint, // JDBC Type
     S <: String  : TPrint  // Schema Type
   ]: TPrint[ParameterMeta[J, S]] =
@@ -37,7 +63,7 @@ package object amm {
       s"""$cm[$j, $s]"""
     }
 
-  implicit def paramhconsBlahblah[
+  implicit def ParameterMetaHConsTprint[
     J <: Int     : TPrint, // JDBC Type
     S <: String  : TPrint, // Schema Type
     L <: HList   : TPrint
@@ -46,7 +72,7 @@ package object amm {
       "  " + tprint[ParameterMeta[J, S]] + " ::\n" ++ tprint[L]
     }
 
-  implicit def columnMetaTPrint[
+  implicit def ColumnMetaTPrint[
     J <: Int     : TPrint, // JDBC Type
     S <: String  : TPrint, // Schema Type
     N <: Nullity : TPrint, // Nullability
@@ -59,7 +85,7 @@ package object amm {
       s"""$cm[$j, $s, $n, $t, $c]"""
     }
 
-  implicit def hconsBlahblah[
+  implicit def ColumnMetaHConsTPrint[
     J <: Int     : TPrint, // JDBC Type
     S <: String  : TPrint, // Schema Type
     N <: Nullity : TPrint, // Nullability
@@ -71,10 +97,8 @@ package object amm {
       "  " + tprint[ColumnMeta[J, S, N, T, C]] + " ::\n" ++ tprint[L]
     }
 
-  implicit val hnilBlah: TPrint[HNil] =
-    TPrint.literal("  HNil")
-
-  def jdbc[J <: Int: TPrint]: String = 
+  // JDBC singleton Int to useful string 
+  private def jdbc[J <: Int: TPrint]: String = 
     tprint[J].toInt match {
       case ARRAY         =>  "ARRAY"
       case BIGINT        =>  "BIGINT"
@@ -116,7 +140,7 @@ package object amm {
     }
 
     // pad by adding spaces after commas where needed .. this is really brittle
-    def realign(s: String, expected: Int): String = {
+    private def realign(s: String, expected: Int): String = {
       val lines = s.lines.toList
       val cols  = lines.map { s =>
         val chunks = s.split(",")
@@ -133,7 +157,7 @@ package object amm {
 
 
     // pad by adding spaces before ]
-    def brack(s: String, expected: Int): String = {
+    private def brack(s: String, expected: Int): String = {
       val lines = s.lines.toList
       val cols  = lines.map { s =>
         val chunks = s.split("]")
