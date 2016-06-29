@@ -15,11 +15,11 @@ TODO:
 - [x] Updates returning generated keys.
 - [x] Bulk updates.
 - [x] remove param type and nullity for ParameterMeta
-- [ ] Process
+- [x] Process
 - [ ] `in` clauses (hard, ok to punt)
 - [ ] generalized Write deriving (generic, unitary, etc.)
 - [ ] array~collection read/write via CBF
 - [ ] date/time type mappings
 - [ ] narrowed derivations (ARRAY int4 to Array[Int] for instance)
-= [ ] clean up `TPrint` impl, get working in normal REPL
+= [x] clean up `TPrint` impl, get working in normal REPL
 - [ ] tut doc

@@ -36,7 +36,7 @@ scalacOptions ++= Seq(
 
 Ok so the big difference betweeen the `sql` interpolator and the `tsql` interpolator is that the latter infers interesting types.
 
-### Inference 1. Simple Updates
+### Simple Updates
 
 The inferred type of a `tsql` literal is potentially fancy, but in some cases can be trivial. In the case of an unconditional update the computation is fully specified: there are no parameters and nothing returned other than a row count. So the inferred type is `ConnectionIO[Int]`.
 
@@ -101,7 +101,7 @@ up("foo", "bar", 123456)
 ```
 
 
-### Inference 2: Selects
+### Simple Selects
 
 `SELECT` statements have fancy types describing the output columns in addition to any input parameters.
 
@@ -155,5 +155,27 @@ We can also ask for a `.unique` or `.option` result as with the existing `sql` i
 ```tut
 tsql"select name, population from city where id = 42".unique[(String, Int)]
 ```
+
+> TODO: Streaming
+
+### Parameterized Selects
+
+
+### Updates Returning Columns
+
+
+### Understanding Column and Parameter Constraints
+
+- explain the variance
+- note the MySQL issue
+
+### Custom Type Mappings
+
+- simple co/contravariant mappints
+- schema-constrained mappings
+
+### Using TPrint
+
+
 
 
