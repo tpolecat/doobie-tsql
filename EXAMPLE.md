@@ -68,7 +68,7 @@ The following update contain a `?` placeholder, yielding a fancier type.
 
 ```scala
 scala> val up = tsql"delete from country where population = ?"
-up: tsql.UpdateI[shapeless.::[tsql.ParameterMeta[Int(4),String("int4")],shapeless.HNil]] = tsql.UpdateI@4353691f
+up: tsql.UpdateI[shapeless.::[tsql.ParameterMeta[Int(4),String("int4")],shapeless.HNil]] = tsql.UpdateI@7c1f4189
 ```
 
 If we unpack this type and rewrite the singletons to be more readable it looks like this:
@@ -99,7 +99,7 @@ Multi-parameter placeholder queries become `UpdateI`s that take multiple argumen
 
 ```scala
 scala> val up = tsql"update country set name = ? where code = ? or population > ?"
-up: tsql.UpdateI[shapeless.::[tsql.ParameterMeta[Int(12),String("varchar")],shapeless.::[tsql.ParameterMeta[Int(1),String("bpchar")],shapeless.::[tsql.ParameterMeta[Int(4),String("int4")],shapeless.HNil]]]] = tsql.UpdateI@d7879a2
+up: tsql.UpdateI[shapeless.::[tsql.ParameterMeta[Int(12),String("varchar")],shapeless.::[tsql.ParameterMeta[Int(1),String("bpchar")],shapeless.::[tsql.ParameterMeta[Int(4),String("int4")],shapeless.HNil]]]] = tsql.UpdateI@63e5f417
 ```
 
 The type cleans up to be:
@@ -107,9 +107,9 @@ The type cleans up to be:
 ```scala
 scala> tp(up)
 UpdateI[
-  ParameterMeta[VARCHAR, varchar] ::
-  ParameterMeta[CHAR, bpchar    ] ::
-  ParameterMeta[INTEGER, int4   ] ::
+  ParameterMeta[VARCHAR, varchar] ::   
+  ParameterMeta[CHAR,    bpchar ] ::   
+  ParameterMeta[INTEGER, int4   ] ::   
   HNil
 ]
 ```
@@ -128,7 +128,7 @@ res8: doobie.imports.ConnectionIO[Int] = Gosub()
 
 ```scala
 scala> val q = tsql"select code, name, population from country"
-q: tsql.QueryO[shapeless.::[tsql.ColumnMeta[Int(1),String("bpchar"),tsql.NoNulls,String("country"),String("code")],shapeless.::[tsql.ColumnMeta[Int(12),String("varchar"),tsql.NoNulls,String("country"),String("name")],shapeless.::[tsql.ColumnMeta[Int(4),String("int4"),tsql.NoNulls,String("country"),String("population")],shapeless.HNil]]]] = tsql.QueryO@769f4acd
+q: tsql.QueryO[shapeless.::[tsql.ColumnMeta[Int(1),String("bpchar"),tsql.NoNulls,String("country"),String("code")],shapeless.::[tsql.ColumnMeta[Int(12),String("varchar"),tsql.NoNulls,String("country"),String("name")],shapeless.::[tsql.ColumnMeta[Int(4),String("int4"),tsql.NoNulls,String("country"),String("population")],shapeless.HNil]]]] = tsql.QueryO@6312336f
 ```
 
 Let's look at this type more closely:
@@ -145,14 +145,14 @@ QueryO[
 
 So the type of `q` tells us:
 
-- It's a `QueryO` which means it's a query with an unknown output mapping (we know the column types but don't know the Scala type we want to map to).
+- It's a `QueryO` which means it's a query with an unknown output mapping (we know the column types but don't know the Scala types we want to map to).
 - There are three columns, of JDBC type `CHAR`, `VARCHAR`, and `INTEGER`; and of Schema types `bpchar`, `varchar`, and `int4`, respectively.
 - The columns might not be nullable, which means it might be safe to map them to unlifted (i.e., non-`Option` types).
-- The columns are all from the `country` table/alias/projection and are named `code`, `name`, and `population`, respectively.
+- The columns are all from the `country` table/alias and are named `code`, `name`, and `population`, respectively.
 
-In order to use this query we can provide an output type, which specifies both the row type mapping and the aggregate structure. The element type can be any [nested] product type whose eventual elements have primitive mappings consistent with the JDBC types (more on this later). The aggregate type can be anything with a sensible `CanBuildFrom`, `Reducer`, or `MonadPlus`.
+In order to use this query we can provide an output type, which specifies both the row type mapping *and* the aggregate structure. The element type can be any [nested] product type whose eventual elements have primitive mappings consistent with the `ColumnMeta` (more on this later). The aggregate type can be anything with a sensible `CanBuildFrom`, `Reducer`, or `MonadPlus`.
 
-A basic mapping might be a list of triples. Specifying this output type results in a `ConnectionIO` and we're done.
+So a basic mapping might be a list of triples. Specifying this output type results in a `ConnectionIO` and we're done.
 
 ```scala
 scala> q.as[List[(String, String, Int)]]
@@ -179,14 +179,14 @@ scala> q.as[Array[(String, CountryInfo)]]
 res12: doobie.imports.ConnectionIO[Array[(String, CountryInfo)]] = Gosub()
 ```
 
-If we can map a row to a pair as above, we can accumulate directly to a `Map`.
+If we can map a row to a pair as above, we can accumulate directly to a `Map`, which can be useful.
 
 ```scala
 scala> q.as[Map[String, CountryInfo]]
 res13: doobie.imports.ConnectionIO[Map[String,CountryInfo]] = Gosub()
 ```
 
-We can also ask for a `.unique` (or `.option`) result as with the existing `sql` interpolator.
+We can also ask for a `.unique` or `.option` result as with the existing `sql` interpolator.
 
 ```scala
 scala> tsql"select name, population from city where id = 42".unique[(String, Int)]

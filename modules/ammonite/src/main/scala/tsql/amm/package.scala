@@ -14,7 +14,7 @@ package object amm {
     TPrint.lambda { implicit cfg =>
       val ts = TPrint.literal("QueryIO").render(cfg)
       val (i, o) = (tprint[I], tprint[O])
-      val i0 = brack(realign(i, 4), 2)
+      val i0 = brack(realign(i, 2), 2)
       val o0 = brack(realign(o, 5), 2)
       s"QueryIO[\n$i0,\n$o0\n]"
     }
@@ -32,7 +32,7 @@ package object amm {
     TPrint.lambda { implicit cfg =>
       val ts = TPrint.literal("UpdateIO").render(cfg)
       val (i, o) = (tprint[I], tprint[O])
-      val i0 = brack(realign(i, 4), 2)
+      val i0 = brack(realign(i, 2), 2)
       val o0 = brack(realign(o, 5), 2)
       s"UpdateIO[\n$i0,\n$o0\n]"
     }
@@ -48,9 +48,9 @@ package object amm {
   implicit def UpdateITPrint[I: TPrint]: TPrint[UpdateI[I]] =
     TPrint.lambda { implicit cfg =>
       val ts = TPrint.literal("UpdateI").render(cfg)
-      val o = tprint[I]
-      val o0 = brack(realign(o, 5), 2)
-      s"UpdateI[\n$o0\n]"
+      val i = tprint[I]
+      val i0 = brack(realign(i, 2), 2)
+      s"UpdateI[\n$i0\n]"
     }
 
   implicit def ParameterMetaTPrint[

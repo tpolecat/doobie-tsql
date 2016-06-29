@@ -117,14 +117,14 @@ tp(q)
 
 So the type of `q` tells us:
 
-- It's a `QueryO` which means it's a query with an unknown output mapping (we know the column types but don't know the Scala type we want to map to).
+- It's a `QueryO` which means it's a query with an unknown output mapping (we know the column types but don't know the Scala types we want to map to).
 - There are three columns, of JDBC type `CHAR`, `VARCHAR`, and `INTEGER`; and of Schema types `bpchar`, `varchar`, and `int4`, respectively.
 - The columns might not be nullable, which means it might be safe to map them to unlifted (i.e., non-`Option` types).
-- The columns are all from the `country` table/alias/projection and are named `code`, `name`, and `population`, respectively.
+- The columns are all from the `country` table/alias and are named `code`, `name`, and `population`, respectively.
 
-In order to use this query we can provide an output type, which specifies both the row type mapping and the aggregate structure. The element type can be any [nested] product type whose eventual elements have primitive mappings consistent with the JDBC types (more on this later). The aggregate type can be anything with a sensible `CanBuildFrom`, `Reducer`, or `MonadPlus`.
+In order to use this query we can provide an output type, which specifies both the row type mapping *and* the aggregate structure. The element type can be any [nested] product type whose eventual elements have primitive mappings consistent with the `ColumnMeta` (more on this later). The aggregate type can be anything with a sensible `CanBuildFrom`, `Reducer`, or `MonadPlus`.
 
-A basic mapping might be a list of triples. Specifying this output type results in a `ConnectionIO` and we're done.
+So a basic mapping might be a list of triples. Specifying this output type results in a `ConnectionIO` and we're done.
 
 ```tut
 q.as[List[(String, String, Int)]]
