@@ -2,13 +2,15 @@ package tsql
 
 import doobie.imports.{ FRS, ResultSetIO }
 import java.sql.ResultSet
-import shapeless.{ HNil, HList, ::, Lazy, Generic, <:!<, =:!= }
+import shapeless.{ HNil, HList, ::, Lazy, Generic, <:!<, =:!=, Witness => W}
 import shapeless.ops.hlist.Prepend
 import scalaz.Coyoneda
 import JdbcType._
 
+import scala.annotation.unchecked.uncheckedVariance
+
 /** 
- * Witness that we can read a column value of type `A` while satisfy constraints `O` or any
+ * Witness that we can read a column value of type `A` while satisfying constraints `O` or any
  * more specific constraint. 
  */
 final class Read[+O, A](val run: Coyoneda[(ResultSet, Int) => ?, A]) {
@@ -36,25 +38,48 @@ object Read extends ReadInstances {
       lift(f)
   }
 
+  /** Builder to refine phantom constraints for a single-column Read. */
+  case class refine[J <: Int, S <: String, N <: Nullity, T <: String, C <: String, A](
+    val done: Read[ColumnMeta[J, S, N, T, C], A]
+  ) {
+    def toJdbc   [JJ <: J] = asInstanceOf[refine[JJ,  S,  N,  T,  C,  A]]
+    def toSchema [SS <: S] = asInstanceOf[refine[ J, SS,  N,  T,  C,  A]]
+    def toNullity[NN <: N] = asInstanceOf[refine[ J,  S, NN,  T,  C,  A]]
+    def toTable  [TT <: T] = asInstanceOf[refine[ J,  S,  N, TT,  C,  A]]
+    def toColumn [CC <: C] = asInstanceOf[refine[ J,  S,  N,  T, CC,  A]]
+  }
+
+  /** 
+   * Construct a single-column Read for a given Array element type. Note that this is implemented
+   * as a blind cast from `Object to `Array[A]`; success will depend on the vendor's encoding. No
+   * instances are provided by default.
+   */
+  def array[A](implicit ev: A =:!= Nothing): Read[ColumnMeta[JdbcArray, String, NoNulls, String, String], Array[A]] =
+    ArrayArray.map(_.getArray.asInstanceOf[Array[A]])
+
 }
 
 trait ReadInstances extends ReadInstances1 {
 
   // The JDBC Specification for reading basic types. One per Scala type so we have *some*
   // default, but the lower-priority ones are just as valid.
-  implicit val TinyIntByte        = Read.basic[JdbcTinyInt      ](_ getByte       _)
-  implicit val SmallIntShort      = Read.basic[JdbcSmallInt     ](_ getShort      _)
-  implicit val IntegerInt         = Read.basic[JdbcInteger      ](_ getInt        _)
-  implicit val BigIntLong         = Read.basic[JdbcBigInt       ](_ getLong       _)
-  implicit val RealFloat          = Read.basic[JdbcReal         ](_ getFloat      _)
-  implicit val DoubleDouble       = Read.basic[JdbcDouble       ](_ getDouble     _)
-  implicit val DecimalBigDecimal  = Read.basic[JdbcDecimal      ](_ getBigDecimal _)
-  implicit val BitBoolean         = Read.basic[JdbcBit          ](_ getBoolean    _)
-  implicit val VarCharString      = Read.basic[JdbcVarChar      ](_ getString     _)
-  implicit val BinaryByte         = Read.basic[JdbcBinary       ](_ getBytes      _)
-  implicit val DateDate           = Read.basic[JdbcDate         ](_ getDate       _)
-  implicit val TimeTime           = Read.basic[JdbcTime         ](_ getTime       _)
-  implicit val TimestampTimestamp = Read.basic[JdbcTimestamp    ](_ getTimestamp  _)
+  implicit val TinyIntByte        = Read.basic[JdbcTinyInt  ](_ getByte       _)
+  implicit val SmallIntShort      = Read.basic[JdbcSmallInt ](_ getShort      _)
+  implicit val IntegerInt         = Read.basic[JdbcInteger  ](_ getInt        _)
+  implicit val BigIntLong         = Read.basic[JdbcBigInt   ](_ getLong       _)
+  implicit val RealFloat          = Read.basic[JdbcReal     ](_ getFloat      _)
+  implicit val DoubleDouble       = Read.basic[JdbcDouble   ](_ getDouble     _)
+  implicit val DecimalBigDecimal  = Read.basic[JdbcDecimal  ](_ getBigDecimal _)
+  implicit val BitBoolean         = Read.basic[JdbcBit      ](_ getBoolean    _)
+  implicit val VarCharString      = Read.basic[JdbcVarChar  ](_ getString     _)
+  implicit val BinaryByte         = Read.basic[JdbcBinary   ](_ getBytes      _)
+  implicit val DateDate           = Read.basic[JdbcDate     ](_ getDate       _)
+  implicit val TimeTime           = Read.basic[JdbcTime     ](_ getTime       _)
+  implicit val TimestampTimestamp = Read.basic[JdbcTimestamp](_ getTimestamp  _)
+
+  // Advanced types (incomplete)
+  implicit val ArrayArray   = Read.basic[JdbcArray ](_ getArray _)
+  implicit val OtherObject  = Read.basic[JdbcOther ](_ getObject _)
 
 }
 

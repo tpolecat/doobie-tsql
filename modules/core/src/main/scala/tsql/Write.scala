@@ -2,7 +2,7 @@ package tsql
 
 import doobie.imports.{ FPS, PreparedStatementIO }
 import java.sql.PreparedStatement
-import shapeless.{ HNil, HList, ::, Lazy, Generic, <:!<, Witness }
+import shapeless.{ HNil, HList, ::, Lazy, Generic, =:!=, <:!<, Witness }
 import scalaz.ContravariantCoyoneda
 import JdbcType._
 
@@ -21,7 +21,6 @@ final class Write[+I, -A](val run: ContravariantCoyoneda[(PreparedStatement, Int
 
 }
 
-
 object Write extends WriteDerivations with WriteInstances {
 
   def lift[I, A](f: (PreparedStatement, Int, A) => Unit): Write[I, A] =
@@ -31,6 +30,19 @@ object Write extends WriteDerivations with WriteInstances {
   class BasicPartiallyApplied[J <: Int] {
     def apply[A](f: (PreparedStatement, Int, A) => Unit): Write[ParameterMeta[J, String], A] =
       lift(f)
+  }
+
+  def array[A <: AnyRef](schemaElementType: String)(
+    implicit ev: A =:!= Nothing
+  ): Write[ParameterMeta[JdbcArray, String], Array[A]] =
+    lift { (ps, n, as) =>
+      ps.setArray(n, ps.getConnection.createArrayOf(schemaElementType, as.asInstanceOf[Array[AnyRef]]))
+    }
+
+  /** Builder to refine phantom constraints for a single-column Write. */
+  case class refine[J <: Int, S <: String, A](val done: Write[ParameterMeta[J, S], A]) {
+    def toJdbc  [JJ <: J] = asInstanceOf[refine[JJ,  S, A]]
+    def toSchema[SS <: S] = asInstanceOf[refine[ J, SS, A]]
   }
 
 }
