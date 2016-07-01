@@ -6,8 +6,7 @@ import shapeless.{ HNil, HList, ::, Lazy, Generic, <:!<, =:!=, Witness => W}
 import shapeless.ops.hlist.Prepend
 import scalaz.Coyoneda
 import JdbcType._
-
-import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.generic.CanBuildFrom
 
 /** 
  * Witness that we can read a column value of type `A` while satisfying constraints `O` or any
@@ -139,12 +138,6 @@ trait ReadDerivations extends ReadDerivations1 {
   ): Read[MH :: MT, H :: T] = 
     Read.lift((rs, n) => h.unsafeGet(rs, n) :: t.value.unsafeGet(rs, n + 1))
 
-  implicit def readGeneric[O, A, B](
-    implicit g: Generic.Aux[A, B], 
-             r: Lazy[Read[O, B]]
-   ): Read[O, A] =
-    Read.lift((rs, n) => g.from(r.value.unsafeGet(rs, n)))
-
 }
 
 trait ReadDerivations1 extends ReadDerivations2 {
@@ -161,13 +154,30 @@ trait ReadDerivations1 extends ReadDerivations2 {
       g.from(hg) :: t
     }
 
-  implicit def unitary[O, A](implicit ev: Read[O, A]): Read[O :: HNil, A] =
-    ev.asInstanceOf[Read[O :: HNil, A]]
+  // If we can read an Array then we can read to any CBF
+  // doesn't work, rats. we seem to lose the singleton types by the time the implicit
+  // search gets here. don't know why.
+  implicit def arrayCBF[F[_], O, A](
+    implicit   r: Read[O, Array[A]],
+             cbf: CanBuildFrom[Nothing, A, F[A]],
+              no: F[Int] =:!= Array[Int]
+  ): Read[O, F[A]] =
+    r.map(_.to[F])
 
 }
 
 trait ReadDerivations2 {
 
-    // Todo: Array -> List, Vector, etc.
+  implicit def readWriteRead [O, A](implicit rw: ReadWrite[_, O, A]): Read [O, A] = rw.read
+  implicit def readWriteWrite[I, A](implicit rw: ReadWrite[I, _, A]): Write[I, A] = rw.write
+
+  implicit def readGeneric[O, A, B](
+    implicit g: Generic.Aux[A, B], 
+             r: Lazy[Read[O, B]]
+   ): Read[O, A] =
+    Read.lift((rs, n) => g.from(r.value.unsafeGet(rs, n)))
+
+  implicit def unitary[O, A](implicit ev: Read[O, A]): Read[O :: HNil, A] =
+    ev.asInstanceOf[Read[O :: HNil, A]]
 
 }

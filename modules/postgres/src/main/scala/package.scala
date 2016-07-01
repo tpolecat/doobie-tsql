@@ -5,7 +5,6 @@ import shapeless.{ Witness => W }
 import java.util.UUID
 import java.net.InetAddress
 
-import org.postgis._
 import org.postgresql.util._
 import org.postgresql.geometric._
 
@@ -31,7 +30,12 @@ package object postgres {
   implicit val PGLongArwBoxed    = pgArwBoxed[java.lang.Long,    W.`"_int8"`   .T]("int8"   )
   implicit val PGFloatArwBoxed   = pgArwBoxed[java.lang.Float,   W.`"_float4"` .T]("float4" )
   implicit val PGDoubleArwBoxed  = pgArwBoxed[java.lang.Double,  W.`"_float8"` .T]("float8" )
-  implicit val PGStringArwBoxed  = pgArwBoxed[java.lang.String,  W.`"_varchar"`.T]("varchar")
+
+  val PGStringArwBoxed  = pgArwBoxed[java.lang.String,  W.`"_varchar"`.T]("varchar")
+  implicit val (pgStringArwBoxedR, pgStringArwBoxedW) = (PGStringArwBoxed.read, PGStringArwBoxed.write)
+
+  val PGStringArwBoxed2 = pgArwBoxed[java.lang.String,  W.`"_text"`   .T]("text")
+  implicit val (pgStringArwBoxedR2, pgStringArwBoxedW2) = (PGStringArwBoxed2.read, PGStringArwBoxed2.write)
 
   // Arrays of Unboxed Primitives
   implicit val PGBooleanArw = PGBooleanArwBoxed.axmap[Boolean](identity)(identity)
@@ -51,15 +55,16 @@ package object postgres {
   // Other Types
   implicit val UuidType       = pgOrw[UUID, W.`"uuid"`.T]
 
-  // InetAddress works but has to be packed into a PGObject
-  implicit val InetType = 
-    pgOrw[PGobject, W.`"inet"`.T]
-      .xmap(a => InetAddress.getByName(a.getValue)) { a =>
-        val pg = new PGobject
-        pg.setType("inet")
-        pg.setValue(a.getHostAddress)
-        pg 
-      }
+  // // InetAddress works but has to be packed into a PGObject
+  // implicit val InetType = 
+  //   pgOrw[PGobject, W.`"inet"`.T]
+  //     .xmap(a => InetAddress.getByName(a.getValue)) { a =>
+  //       val pg = new PGobject
+  //       pg.setType("inet")
+  //       pg.setValue(a.getHostAddress)
+  //       pg 
+  //     }
+
+  // TODO: PostGIS, Enumerations
 
 }
-

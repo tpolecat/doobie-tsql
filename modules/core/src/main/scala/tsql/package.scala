@@ -9,9 +9,6 @@ package object tsql {
   implicit def toTsqlInterpolator(sc: StringContext): TSql.Interpolator =
     new TSql.Interpolator(sc)
 
-  implicit def readWriteRead [O, A](implicit rw: ReadWrite[_, O, A]): Read [O, A] = rw.read
-  implicit def readWriteWrite[I, A](implicit rw: ReadWrite[I, _, A]): Write[I, A] = rw.write
-
   implicit class ArrayReadWrite[I, O, A :reflect.ClassTag](rw: ReadWrite[I, O, Array[A]]) {
     def axmap[B : reflect.ClassTag](f: A => B)(g: B => A): ReadWrite[I, O, Array[B]] =
       rw.xmap(_.map(f))(_.map(g))
