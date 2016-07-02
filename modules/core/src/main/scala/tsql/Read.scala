@@ -168,9 +168,6 @@ trait ReadDerivations1 extends ReadDerivations2 {
 
 trait ReadDerivations2 {
 
-  implicit def readWriteRead [O, A](implicit rw: ReadWrite[_, O, A]): Read [O, A] = rw.read
-  implicit def readWriteWrite[I, A](implicit rw: ReadWrite[I, _, A]): Write[I, A] = rw.write
-
   implicit def readGeneric[O, A, B](
     implicit g: Generic.Aux[A, B], 
              r: Lazy[Read[O, B]]

@@ -9,47 +9,79 @@ import tsql._
 import tsql.JdbcType._
 import tsql.postgres._
 
-object PGMappingSpec extends Specification {
+object PGReadInstanceSpec extends Specification {
   
-  def checkType[A](a: A): Boolean = true
+  def ok[A](a: A): Boolean = true
 
-  "Text Array Mappings" should {
+  "Boolean Array Read" should {
 
-    "properly map text[] to Array[String]" in {
-      val a = tsql"select ARRAY['foo'] :: text[]".unique[Array[String]]
-      checkType[ConnectionIO[Array[String]]](a)
-      true
-    }
+    "provide a read mapping from bool[] to Array[Boolean]" in
+      ok(tsql"select ARRAY[true, false]".unique[Array[Boolean]])    
 
-    "properly map text[] to Vector[String]" in {
-      val a = tsql"select ARRAY['foo'] :: text[]".unique[Vector[String]]
-      checkType[ConnectionIO[Vector[String]]](a)
-    }
+    "provide a read mapping from bool[] to Vector[Boolean]" in
+      ok(tsql"select ARRAY[true, false]".unique[Vector[Boolean]])    
 
-    "properly map varchar[] to Array[String]" in {
-      val a = tsql"select ARRAY['foo'] :: varchar[]".unique[Array[String]]
-      checkType[ConnectionIO[Array[String]]](a)
-    }
+    "provide a read mapping from bit[] to Array[Boolean]" in
+      ok(tsql"select ARRAY[1, 0, 1] :: bit[]".unique[Array[Boolean]])    
 
-    "properly map varchar[] to Vector[String]" in {
-      val a = tsql"select ARRAY['foo'] :: varchar[]".unique[Vector[String]]
-      checkType[ConnectionIO[Vector[String]]](a)
-    }
+    "provide a read mapping from bit[] to Vector[Boolean]" in
+      ok(tsql"select ARRAY[1, 0, 1] :: bit[]".unique[Vector[Boolean]])    
 
   }
 
-  "Int Array Mappings" should {
+  "Int Array Read Mappings" should {
 
-    "properly map integer[] to Array[Int]" in {
-      val a = tsql"select ARRAY[1,2,3] :: integer[]".unique[Array[Int]]
-      checkType[ConnectionIO[Array[Int]]](a)
-      true
-    }
+    "provide a read mapping from integer[] to Array[Int]" in
+      ok(tsql"select ARRAY[1,2,3] :: integer[]".unique[Array[Int]])    
 
-    "properly map integer[] to Vector[Int]" in {
-      val a = tsql"select ARRAY[1,2,3] :: integer[]".unique[Vector[Int]]
-      checkType[ConnectionIO[Vector[Int]]](a)
-    }
+    "provide a read mapping from integer[] to Vector[Int]" in
+      ok(tsql"select ARRAY[1,2,3] :: integer[]".unique[Vector[Int]])    
+
+  }
+
+  "Long Array Read Mappings" should {
+
+    "provide a read mapping from bigint[] to Array[Long]" in
+      ok(tsql"select ARRAY[1,2,3] :: bigint[]".unique[Array[Long]])    
+
+    "provide a read mapping from bigint[] to Vector[Long]" in
+      ok(tsql"select ARRAY[1,2,3] :: bigint[]".unique[Vector[Long]])    
+
+  }
+
+  "Float Array Read Mappings" should {
+
+    "provide a read mapping from real[] to Array[Float]" in
+      ok(tsql"select ARRAY[1.23, 4.56] :: real[]".unique[Array[Float]])    
+
+    "provide a read mapping from real[] to Vector[Float]" in
+      ok(tsql"select ARRAY[1.23, 4.56] :: real[]".unique[Vector[Float]])    
+
+  }
+
+  "Double Array Read Mappings" should {
+
+    "provide a read mapping from float[] to Array[Double]" in
+      ok(tsql"select ARRAY[1.23, 4.56] :: float[]".unique[Array[Double]])    
+
+    "provide a read mapping from float[] to Vector[Double]" in
+      ok(tsql"select ARRAY[1.23, 4.56] :: float[]".unique[Vector[Double]])    
+
+  }
+
+  "String Array Read Mappings" should {
+
+    "provide a read mapping from text[] to Array[String]" in
+      ok(tsql"select ARRAY['foo'] :: text[]".unique[Array[String]])    
+
+    "provide a read mapping from text[] to Vector[String] via CBF" in
+      ok(tsql"select ARRAY['foo'] :: text[]".unique[Vector[String]])    
+
+    "provide a read mapping from varchar[] to Array[String]" in
+      ok(tsql"select ARRAY['foo'] :: varchar[]".unique[Array[String]])    
+
+    "provide a read mapping from varchar[] to Vector[String] via CBF" in
+      ok(tsql"select ARRAY['foo'] :: varchar[]".unique[Vector[String]])    
 
   }
 
