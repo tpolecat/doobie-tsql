@@ -39,7 +39,7 @@ object PGReadInstanceSpec extends Specification {
 
   }
 
-  "Long Array Read Mappings" should {
+  "Long Array Read" should {
 
     "provide a read mapping from bigint[] to Array[Long]" in
       ok(tsql"select ARRAY[1,2,3] :: bigint[]".unique[Array[Long]])    
@@ -49,7 +49,7 @@ object PGReadInstanceSpec extends Specification {
 
   }
 
-  "Float Array Read Mappings" should {
+  "Float Array Read" should {
 
     "provide a read mapping from real[] to Array[Float]" in
       ok(tsql"select ARRAY[1.23, 4.56] :: real[]".unique[Array[Float]])    
@@ -59,7 +59,7 @@ object PGReadInstanceSpec extends Specification {
 
   }
 
-  "Double Array Read Mappings" should {
+  "Double Array Read" should {
 
     "provide a read mapping from float[] to Array[Double]" in
       ok(tsql"select ARRAY[1.23, 4.56] :: float[]".unique[Array[Double]])    
@@ -69,7 +69,7 @@ object PGReadInstanceSpec extends Specification {
 
   }
 
-  "String Array Read Mappings" should {
+  "String Array Read" should {
 
     "provide a read mapping from text[] to Array[String]" in
       ok(tsql"select ARRAY['foo'] :: text[]".unique[Array[String]])    
