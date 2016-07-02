@@ -1,4 +1,4 @@
-package tsql 
+package doobie.tsql 
 
 import doobie.imports.{ FRS, HRS, ResultSetIO }
 import java.sql.ResultSet

@@ -1,3 +1,5 @@
+package doobie
+
 import doobie.imports._
 import doobie.util.process._
 import java.sql.{ PreparedStatement, ResultSet }

@@ -1,4 +1,4 @@
-package tsql
+package doobie.tsql
 
 import java.sql.Types._
 import shapeless.Witness

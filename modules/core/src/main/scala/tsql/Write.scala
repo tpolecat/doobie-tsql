@@ -1,10 +1,11 @@
-package tsql 
+package doobie.tsql 
 
 import doobie.imports.{ FPS, PreparedStatementIO }
 import java.sql.PreparedStatement
 import shapeless.{ HNil, HList, ::, Lazy, Generic, =:!=, <:!<, Witness }
 import scalaz.ContravariantCoyoneda
 import JdbcType._
+import scala.collection.generic.CanBuildFrom
 
 import scala.annotation.unchecked.uncheckedVariance
 
@@ -58,9 +59,6 @@ trait WriteDerivations {
       case (rs, n, None)    => rs.setNull(n, JdbcType.valueOf[J]) //, JdbcType.valueOf[S]) hmm..
     }
 
-//   // Todo: Array -> List, Vector, etc.
-//   // Todo: decode a :: HNil as just a
-
   implicit val hnil: Write[HNil, HNil] =
     Write.lift((_, _, _) => ())
 
@@ -78,6 +76,16 @@ trait WriteDerivations {
              r: Lazy[Write[I, B]]
    ): Write[I, A] =
     Write.lift((rs, n, a) => r.value.unsafeSet(rs, n, g.to(a)))
+
+
+  // If we can write an Array then we can read to any CBF
+  // doesn't work, rats ...
+  // implicit def arrayCBF[F[a] <: TraversableOnce[a], I, A](
+  //   implicit   r: Write[I, Array[A]],
+  //            cbf: CanBuildFrom[F[A], A, Array[A]],
+  //             no: F[Int] =:!= Array[Int]
+  // ): Write[I, F[A]] =
+  //   r.contramap(_.to[Array])
 
 }
 

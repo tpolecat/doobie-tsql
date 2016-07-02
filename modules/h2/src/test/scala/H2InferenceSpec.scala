@@ -1,12 +1,12 @@
-package tsql.h2
+package doobie.tsql.h2
 
 import shapeless.{ Witness => W, _ }
 import shapeless.test._
 
 import doobie.imports.ConnectionIO
 import org.specs2.mutable.Specification
-import tsql._
-import tsql.JdbcType._
+import doobie.tsql._
+import doobie.tsql.JdbcType._
 
 object H2InferenceSpec extends Specification {
   

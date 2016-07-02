@@ -1,4 +1,4 @@
-package tsql
+package doobie.tsql
 
 import shapeless.{ Witness => W, _ }
 
@@ -8,7 +8,7 @@ import java.net.InetAddress
 import org.postgresql.util._
 import org.postgresql.geometric._
 
-import tsql.JdbcType._
+import doobie.tsql.JdbcType._
 
 package object postgres extends PGReadInstances with PGWriteInstances
 

@@ -1,4 +1,4 @@
-package tsql
+package doobie.tsql
 
 sealed trait Nullity 
 sealed trait NoNulls         extends Nullity 

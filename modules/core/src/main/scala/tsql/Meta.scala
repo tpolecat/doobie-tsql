@@ -1,4 +1,4 @@
-package tsql
+package doobie.tsql
 
 trait ColumnMeta[
   -J <: Int,     // JDBC Type

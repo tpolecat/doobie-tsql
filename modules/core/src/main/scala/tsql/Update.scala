@@ -1,4 +1,4 @@
-package tsql
+package doobie.tsql
 
 import shapeless.{ HList, ProductArgs }
 import doobie.imports._

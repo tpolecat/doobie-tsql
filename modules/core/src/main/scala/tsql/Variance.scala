@@ -1,4 +1,4 @@
-package tsql.stuff
+package doobie.tsql.stuff
 
 import shapeless.{ Witness => W }
 

@@ -1,4 +1,4 @@
-package tsql
+package doobie.tsql
 
 import scala.collection.JavaConverters._
 import scala.language.experimental.macros
@@ -124,7 +124,7 @@ object TSql {
     def impl[A](a: Tree): Tree = {
 
       // Our SQL
-      val q"tsql.`package`.toTsqlInterpolator(scala.StringContext.apply(..$parts)).tsql" = c.prefix.tree
+      val q"doobie.tsql.`package`.toTsqlInterpolator(scala.StringContext.apply(..$parts)).tsql" = c.prefix.tree
       val sql = parts.map { case Literal(Constant(s: String)) => s } .mkString("?")
 
       // For returning columns we use a comment. If returned columns are specified then the
@@ -176,12 +176,12 @@ object TSql {
 
         // Done!
         (it, ot, rot) match {
-          case (HNilType, HNilType, HNilType) => q"doobie.imports.HC.prepareStatement($sql)(doobie.imports.HPS.executeUpdate)"
-          case (HNilType, HNilType, _       ) => q"new tsql.UpdateO[$rot]($sql, $returning)"
-          case (_       , HNilType, HNilType) => q"new tsql.UpdateI[$it]($sql)"
-          case (_       , HNilType, _       ) => q"new tsql.UpdateIO[$it,$rot]($sql, $returning)"
-          case (HNilType, _       , HNilType) => q"new tsql.QueryO[$ot]($sql)"
-          case (_       , _       , HNilType) => q"new tsql.QueryIO[$it, $ot]($sql)"
+          case (HNilType, HNilType, HNilType) => q"doobie.hi.connection.prepareStatement($sql)(doobie.imports.HPS.executeUpdate)"
+          case (HNilType, HNilType, _       ) => q"new doobie.tsql.UpdateO[$rot]($sql, $returning)"
+          case (_       , HNilType, HNilType) => q"new doobie.tsql.UpdateI[$it]($sql)"
+          case (_       , HNilType, _       ) => q"new doobie.tsql.UpdateIO[$it,$rot]($sql, $returning)"
+          case (HNilType, _       , HNilType) => q"new doobie.tsql.QueryO[$ot]($sql)"
+          case (_       , _       , HNilType) => q"new doobie.tsql.QueryIO[$it, $ot]($sql)"
           case _ => 
             c.abort(c.enclosingPosition, "A statement that returns columns cannot also have a `-- returning ...` pragma.")
         }
@@ -195,7 +195,7 @@ object TSql {
           c.abort(c.enclosingPosition, "SQL literals can contain placeholders (?) or interpolated values ($x) but not both.")
 
         // Ok the game now is to match up `it` with `a.tpe`, so we need a Write[it, a.tpe]
-        val need = c.typecheck(tq"tsql.Write[$it, ${a.tpe}]", c.TYPEmode).tpe
+        val need = c.typecheck(tq"doobie.tsql.Write[$it, ${a.tpe}]", c.TYPEmode).tpe
 
         // Ok now look it up
         val write = c.inferImplicitValue(need) match {
@@ -205,12 +205,12 @@ object TSql {
 
         // Done!
        (it, ot, rot) match {
-          case (HNilType, HNilType, HNilType) => q"doobie.imports.HC.prepareStatement($sql)(doobie.imports.HPS.executeUpdate)"
-          case (HNilType, HNilType, _       ) => q"new tsql.UpdateO[$rot]($sql, $returning)"
-          case (_       , HNilType, HNilType) => q"new tsql.UpdateI[$it]($sql).applyProduct($a)($write)"
-          case (_       , HNilType, _       ) => q"new tsql.UpdateIO[$it,$rot]($sql, $returning).applyProduct($a)($write)"
-          case (HNilType, _       , HNilType) => q"new tsql.QueryO[$ot]($sql)"
-          case (_       , _       , HNilType) => q"new tsql.QueryIO[$it, $ot]($sql).applyProduct($a)($write)"
+          case (HNilType, HNilType, HNilType) => q"doobie.hi.connection.prepareStatement($sql)(doobie.imports.HPS.executeUpdate)"
+          case (HNilType, HNilType, _       ) => q"new doobie.tsql.UpdateO[$rot]($sql, $returning)"
+          case (_       , HNilType, HNilType) => q"new doobie.tsql.UpdateI[$it]($sql).applyProduct($a)($write)"
+          case (_       , HNilType, _       ) => q"new doobie.tsql.UpdateIO[$it,$rot]($sql, $returning).applyProduct($a)($write)"
+          case (HNilType, _       , HNilType) => q"new doobie.tsql.QueryO[$ot]($sql)"
+          case (_       , _       , HNilType) => q"new doobie.tsql.QueryIO[$it, $ot]($sql).applyProduct($a)($write)"
           case _ => 
             c.abort(c.enclosingPosition, "A statement that returns columns cannot also have a `-- returning ...` pragma.")
         }

@@ -1,12 +1,12 @@
-package tsql.mysql
+package doobie.tsql.mysql
 
 import shapeless.{ Witness => W, _ }
 import shapeless.test._
 
 import doobie.imports.ConnectionIO
 import org.specs2.mutable.Specification
-import tsql._
-import tsql.JdbcType._
+import doobie.tsql._
+import doobie.tsql.JdbcType._
 
 object PGInferenceSpec extends Specification {
   

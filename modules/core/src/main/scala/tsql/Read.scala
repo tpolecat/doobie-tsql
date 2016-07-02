@@ -1,4 +1,4 @@
-package tsql 
+package doobie.tsql 
 
 import doobie.imports.{ FRS, ResultSetIO }
 import java.sql.ResultSet
@@ -25,7 +25,7 @@ final class Read[+O, A](val run: Coyoneda[(ResultSet, Int) => ?, A]) {
 
 }
 
-object Read extends ReadInstances {
+object Read extends ReadInstances with ReadDerivations {
 
   def lift[O, A](f: (ResultSet, Int) => A): Read[O, A] =
     new Read(Coyoneda.lift[(ResultSet, Int) => ?, A](f))
@@ -82,7 +82,7 @@ trait ReadInstances extends ReadInstances1 {
 
 }
 
-trait ReadInstances1 extends ReadDerivations {
+trait ReadInstances1 {
 
   // Remaining spec-supported mappings.
   implicit val TinyIntShort       = Read.basic[JdbcTinyInt      ](_ getShort      _)
@@ -155,8 +155,6 @@ trait ReadDerivations1 extends ReadDerivations2 {
     }
 
   // If we can read an Array then we can read to any CBF
-  // doesn't work, rats. we seem to lose the singleton types by the time the implicit
-  // search gets here. don't know why.
   implicit def arrayCBF[F[_], O, A](
     implicit   r: Read[O, Array[A]],
              cbf: CanBuildFrom[Nothing, A, F[A]],
