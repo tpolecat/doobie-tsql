@@ -6,13 +6,13 @@ This tutorial assumes you are familiar with **doobie** and know what to do once 
 To play along at home fetch the repo and then do `sbt docs/console`. There is currently no published artifact. We're using the same test database as the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.3/00-index.html) so check that out if you need to set it up. We will use the same imports as with normal **doobie**, but we also import `tsql._`. 
 
 ```tut
-import doobie.imports._, tsql._
+import doobie.imports._, doobie.tsql._
 import shapeless._
 ```
 
 ```tut:invisible
 // borrow some stuff from ammonite so we can format the types nicely
-import tsql.amm._, pprint.TPrint, pprint.Config.Colors._
+import doobie.tsql.amm._, pprint.TPrint, pprint.Config.Colors._
 def tp[A:TPrint](a:A) = println(pprint.tprint[A])
 ```
 

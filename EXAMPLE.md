@@ -1,13 +1,18 @@
 
 ### Quick Start
 
-Same setup as with normal **doobie**, but we also import `tsql._`. We're using the same test database as the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.3/00-index.html) so check that out if you want to set it up yourself.
+This tutorial assumes you are familiar with **doobie** and know what to do once you have a `ConnectionIO`. The examples given here are simply constructions to demonstrate types and are never executed.
+
+To play along at home fetch the repo and then do `sbt docs/console`. There is currently no published artifact. We're using the same test database as the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.3/00-index.html) so check that out if you need to set it up. We will use the same imports as with normal **doobie**, but we also import `tsql._`. 
 
 ```scala
-import doobie.imports._, tsql._
+scala> import doobie.imports._, doobie.tsql._
+import doobie.imports._
+import doobie.tsql._
+
+scala> import shapeless._
 import shapeless._
 ```
-
 
 
 
@@ -68,7 +73,7 @@ The following update contain a `?` placeholder, yielding a fancier type.
 
 ```scala
 scala> val up = tsql"delete from country where population = ?"
-up: tsql.UpdateI[shapeless.::[tsql.ParameterMeta[Int(4),String("int4")],shapeless.HNil]] = tsql.UpdateI@7290dbdb
+up: doobie.tsql.UpdateI[shapeless.::[doobie.tsql.ParameterMeta[Int(4),String("int4")],shapeless.HNil]] = doobie.tsql.UpdateI@5be206f4
 ```
 
 If we unpack this type and rewrite the singletons to be more readable it looks like this:
@@ -95,11 +100,19 @@ scala> up(42)
 res6: doobie.imports.ConnectionIO[Int] = Gosub()
 ```
 
+Note that nullity is always unknown for parameters; if you wish to set a parameter to `NULL` you can use an `Option` type, and `None` will result in a `.setNull(...)` call on the underlying statement.
+
+> TODO
+> ```tut
+> def opUp(pop: Option[Int]) = up(pop) // compiles fine
+> ```
+
+
 Multi-parameter placeholder queries become `UpdateI`s that take multiple arguments (there is no arity limit).
 
 ```scala
 scala> val up = tsql"update country set name = ? where code = ? or population > ?"
-up: tsql.UpdateI[shapeless.::[tsql.ParameterMeta[Int(12),String("varchar")],shapeless.::[tsql.ParameterMeta[Int(1),String("bpchar")],shapeless.::[tsql.ParameterMeta[Int(4),String("int4")],shapeless.HNil]]]] = tsql.UpdateI@3f96146a
+up: doobie.tsql.UpdateI[shapeless.::[doobie.tsql.ParameterMeta[Int(12),String("varchar")],shapeless.::[doobie.tsql.ParameterMeta[Int(1),String("bpchar")],shapeless.::[doobie.tsql.ParameterMeta[Int(4),String("int4")],shapeless.HNil]]]] = doobie.tsql.UpdateI@5b341f10
 ```
 
 The type cleans up to be:
@@ -128,7 +141,7 @@ res8: doobie.imports.ConnectionIO[Int] = Gosub()
 
 ```scala
 scala> val q = tsql"select code, name, population from country"
-q: tsql.QueryO[shapeless.::[tsql.ColumnMeta[Int(1),String("bpchar"),tsql.NoNulls,String("country"),String("code")],shapeless.::[tsql.ColumnMeta[Int(12),String("varchar"),tsql.NoNulls,String("country"),String("name")],shapeless.::[tsql.ColumnMeta[Int(4),String("int4"),tsql.NoNulls,String("country"),String("population")],shapeless.HNil]]]] = tsql.QueryO@8029b63
+q: doobie.tsql.QueryO[shapeless.::[doobie.tsql.ColumnMeta[Int(1),String("bpchar"),doobie.tsql.NoNulls,String("country"),String("code")],shapeless.::[doobie.tsql.ColumnMeta[Int(12),String("varchar"),doobie.tsql.NoNulls,String("country"),String("name")],shapeless.::[doobie.tsql.ColumnMeta[Int(4),String("int4"),doobie.tsql.NoNulls,String("country"),String("population")],shapeless.HNil]]]] = doobie.tsql.QueryO@42125e62
 ```
 
 Let's look at this type more closely:

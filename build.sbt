@@ -21,8 +21,8 @@ lazy val buildSettings = Seq(
   licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
   scalaVersion := "2.11.8",
   libraryDependencies ++= macroParadise(scalaVersion.value) ++ Seq(
-    "org.scalacheck" %% "scalacheck"  % "1.11.5" % "test",
-    "org.specs2"     %% "specs2-core" % "3.6.5"  % "test"
+    "org.scalacheck" %% "scalacheck"  % "1.13.0" % "test",
+    "org.specs2"     %% "specs2-core" % "3.7.1"  % "test"
   )
   // no cross version yet ... 2.10 doesn't quite work, no 2.12 for doobie 0.2.x
 )
@@ -62,7 +62,7 @@ lazy val core = project.in(file("modules/core"))
       "org.scala-lang" % "scala-reflect"  % scalaVersion.value,
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.typelevel" %% "macro-compat"   % "1.1.1",
-      "org.tpolecat"  %% "doobie-core"    % "0.2.3"
+      "org.tpolecat"  %% "doobie-core"    % "0.3.0"
     ),
     addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
   )
@@ -86,7 +86,7 @@ lazy val postgres = project.in(file("modules/postgres"))
       "-Xmacro-settings:doobie.password="
     ),
     libraryDependencies ++= Seq(
-      "org.tpolecat"  %% "doobie-contrib-postgresql" % "0.2.3"
+      "org.tpolecat"  %% "doobie-contrib-postgresql" % "0.3.0"
     ),
     initialCommands := """
       |import scalaz._,Scalaz._
@@ -115,7 +115,7 @@ lazy val h2 = project.in(file("modules/h2"))
       "-Xmacro-settings:doobie.password="
     ),
     libraryDependencies ++= Seq(
-      "org.tpolecat"  %% "doobie-contrib-h2" % "0.2.3"
+      "org.tpolecat"  %% "doobie-contrib-h2" % "0.3.0"
     ),
     initialCommands := s"""
       |import tsql._, tsql.amm._, scalaz._, Scalaz._, doobie.imports._, shapeless._
@@ -156,7 +156,7 @@ lazy val docs = project.in(file("modules/docs"))
       "-Xmacro-settings:doobie.password="
     ),
     libraryDependencies ++= Seq(
-      "org.tpolecat"  %% "doobie-contrib-postgresql" % "0.2.3"
+      "org.tpolecat"  %% "doobie-contrib-postgresql" % "0.3.0"
     ),
     tutTargetDirectory := (baseDirectory in root).value,
     tut := {

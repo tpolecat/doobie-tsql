@@ -22,21 +22,21 @@ package object tsql {
     val preparedStatement: Process[ConnectionIO, PreparedStatement] = 
       resource(
         create)(ps =>
-        FC.liftPreparedStatement(ps, FPS.close))(ps =>
+        FC.lift(ps, FPS.close))(ps =>
         Option(ps).point[ConnectionIO]).take(1) // note
   
     def results(ps: PreparedStatement): Process[ConnectionIO, A] =
       resource(
-        FC.liftPreparedStatement(ps, exec))(rs =>
-        FC.liftResultSet(rs, FRS.close))(rs =>
-        FC.liftResultSet(rs, FRS.next.flatMap {
+        FC.lift(ps, exec))(rs =>
+        FC.lift(rs, FRS.close))(rs =>
+        FC.lift(rs, FRS.next.flatMap {
           case false => Option.empty[A].point[ResultSetIO]
           case true  => ev.read(1).map(Option(_))
         }))
 
     for {
       ps <- preparedStatement
-      _  <- Process.eval(FC.liftPreparedStatement(ps, prep))
+      _  <- Process.eval(FC.lift(ps, prep))
       a  <- results(ps)
     } yield a
 

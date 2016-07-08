@@ -35,7 +35,7 @@ class UpdateO[O](sql: String, returning: List[String], prepare: PreparedStatemen
     this(sql, returning, ().point[PreparedStatementIO], HPS.executeUpdate *> FPS.getGeneratedKeys)
   
   def as[FA](implicit rr: ReadResult[O, FA]): ConnectionIO[FA] =
-    HC.prepareStatementS(sql, returning)(prepare *> exec >>= (FPS.liftResultSet(_, rr.run)))
+    HC.prepareStatementS(sql, returning)(prepare *> exec >>= (FPS.lift(_, rr.run)))
 
   def process[A](implicit r: Read[O, A]): Process[ConnectionIO, A] =
     liftProcess[O,A](FC.prepareStatement(sql, returning.toArray), prepare, exec)
