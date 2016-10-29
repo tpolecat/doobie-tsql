@@ -46,7 +46,8 @@ lazy val commonSettings = Seq(
       "-Ywarn-dead-code"
       // "-Ywarn-value-discard"
     ),
-    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.7.1")
+    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.7.1"),
+    publishArtifact in (Compile, packageDoc) := false
 ) ++ ammSettings
 
 lazy val root = project.in(file("."))
@@ -58,6 +59,7 @@ lazy val core = project.in(file("modules/core"))
   .settings(buildSettings)
   .settings(commonSettings)
   .settings(
+    name := "doobie-tsql-core",
     libraryDependencies ++= Seq(
       "org.scala-lang" % "scala-reflect"  % scalaVersion.value,
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
@@ -71,6 +73,7 @@ lazy val ammonite = project.in(file("modules/ammonite"))
   .settings(buildSettings)
   .settings(commonSettings)
   .settings(
+    name := "doobie-tsql-ammonite",
     libraryDependencies += "com.lihaoyi" % "ammonite-repl" % "0.6.0" cross CrossVersion.full
   )
   .dependsOn(core)
@@ -79,6 +82,7 @@ lazy val postgres = project.in(file("modules/postgres"))
   .settings(buildSettings)
   .settings(commonSettings)
   .settings(
+    name := "doobie-tsql-postgres",
     scalacOptions ++= Seq(
       "-Xmacro-settings:doobie.driver=org.postgresql.Driver",
       "-Xmacro-settings:doobie.connect=jdbc:postgresql:world",
@@ -98,8 +102,10 @@ lazy val postgres = project.in(file("modules/postgres"))
       |import org.postgis._
       |import org.postgresql.util._
       |import org.postgresql.geometric._
-      |import tsql._
+      |import doobie.tsql._
       |import shapeless._
+      |import doobie.tsql.amm._, pprint.TPrint, pprint.Config.Colors._
+      |def tp[A:TPrint](a:A) = println(pprint.tprint[A])
       """.stripMargin
   )
   .dependsOn(core, ammonite)
@@ -108,6 +114,7 @@ lazy val h2 = project.in(file("modules/h2"))
   .settings(buildSettings)
   .settings(commonSettings)
   .settings(
+    name := "doobie-tsql-h2",
     scalacOptions ++= Seq(
       "-Xmacro-settings:doobie.driver=org.h2.Driver",
       "-Xmacro-settings:doobie.connect=jdbc:h2:world",
@@ -118,7 +125,7 @@ lazy val h2 = project.in(file("modules/h2"))
       "org.tpolecat"  %% "doobie-contrib-h2" % "0.3.0"
     ),
     initialCommands := s"""
-      |import tsql._, tsql.amm._, scalaz._, Scalaz._, doobie.imports._, shapeless._
+      |import doobie.tsql._, doobie.tsql.amm._, scalaz._, Scalaz._, doobie.imports._, shapeless._
       |""".stripMargin
   )
   .dependsOn(core, ammonite)
@@ -127,6 +134,7 @@ lazy val mysql = project.in(file("modules/mysql"))
   .settings(buildSettings)
   .settings(commonSettings)
   .settings(
+    name := "doobie-tsql-mysql",
     scalacOptions ++= Seq(
       "-Xmacro-settings:doobie.driver=com.mysql.cj.jdbc.Driver",
       "-Xmacro-settings:doobie.connect=jdbc:mysql://localhost/world?useSSL=false&serverTimezone=UTC",
@@ -138,7 +146,7 @@ lazy val mysql = project.in(file("modules/mysql"))
       "mysql" % "mysql-connector-java" % "6.0.2"
     ),
     initialCommands := s"""
-      |import tsql._, tsql.amm._, scalaz._, Scalaz._, doobie.imports._, shapeless._
+      |import doobie.tsql._, doobie.tsql.amm._, scalaz._, Scalaz._, doobie.imports._, shapeless._
       |""".stripMargin
   )
   .dependsOn(core, ammonite)
@@ -149,6 +157,7 @@ lazy val docs = project.in(file("modules/docs"))
   .settings(commonSettings)
   .settings(tutSettings)
   .settings(
+    name := "doobie-tsql-docs",
     scalacOptions ++= Seq(
       "-Xmacro-settings:doobie.driver=org.postgresql.Driver",
       "-Xmacro-settings:doobie.connect=jdbc:postgresql:world",

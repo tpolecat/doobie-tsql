@@ -2,7 +2,7 @@
 
 Compile-time checked SQL literals with fancy inferred types. For **doobie**.
 
-This is a **prototype** the works with 0.2.3 but I would like it to be included as an add-on for 0.3, and subsume the existing high-level API in doobie 0.4.
+This is a **prototype** that I would like it to be included as an add-on for 0.3, and subsume the existing high-level API in 0.4.
 
 The high points:
 
@@ -12,8 +12,14 @@ The high points:
 
 See the [**EXAMPLE**](EXAMPLE.md) for much more information.
 
-TODO:
+### Building
 
+Right now you need to set up the World database from doobie in Posgtgres and MySQL, respectively, if you want to compile those modules. The connect information is in the build since it's a compile-time thing now.
+
+### TODO
+
+- [ ] CI, etc.
+- [ ] better handling of credentials
 - [x] Updates returning generated keys.
 - [x] Bulk updates.
 - [x] remove param type and nullity for ParameterMeta
@@ -25,6 +31,5 @@ TODO:
 - [ ] date/time type mappings
 - [x] narrowed derivations (ARRAY int4 to Array[Int] for instance)
 = [x] clean up `TPrint` impl, get working in normal REPL
-- [ ] tut doc
+- [ ] tut micro-site
 - [x] reducer, monadplus
-

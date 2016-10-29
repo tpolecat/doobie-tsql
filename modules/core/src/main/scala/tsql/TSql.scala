@@ -3,7 +3,7 @@ package doobie.tsql
 import scala.collection.JavaConverters._
 import scala.language.experimental.macros
 import scala.reflect.macros.whitebox.Context
-import shapeless.{ HNil, ProductArgs }  
+import shapeless.{ HNil, ProductArgs }
 import macrocompat.bundle
 import doobie.imports._
 import scalaz._, Scalaz._, scalaz.effect.IO
@@ -43,7 +43,7 @@ object TSql {
      * of the setting.
      */
     def settingOrFail(s: String, example: String): String =
-      setting(s).getOrElse(c.abort(c.enclosingPosition, 
+      setting(s).getOrElse(c.abort(c.enclosingPosition,
         s"""macro setting not found: doobie.$s
           |
           |The tsql interpolator needs a value for doobie.$s; you can specify it in sbt like:
@@ -70,12 +70,12 @@ object TSql {
     }
 
     /** Pack a list of types into an `HList`. */
-    def packHList(ts: List[Type]): Type = 
+    def packHList(ts: List[Type]): Type =
       ts.foldRight(HNilType)((a, b) => c.typecheck(tq"shapeless.::[$a, $b]", c.TYPEmode).tpe)
 
     /** Compute the column constraint, which will be an `HList` of `ColumnMeta`. */
     val columnConstraint: PreparedStatementIO[Type] =
-      FPS.getMetaData.map { 
+      FPS.getMetaData.map {
         case null => HNilType
         case md   =>
           packHList((1 to md.getColumnCount).toList.map { i =>
@@ -90,7 +90,7 @@ object TSql {
 
     /** Compute the parameter constraint, which will be an `HList` of `ParameterMeta`. */
     val parameterConstraint: PreparedStatementIO[(Type, Int)] =
-      FPS.getParameterMetaData.map { 
+      FPS.getParameterMetaData.map {
         case null => (HNilType, 0)
         case md   =>
           (packHList((1 to md.getParameterCount).toList.map { i =>
@@ -117,8 +117,15 @@ object TSql {
             """.stripMargin)
 
           } else (AnyType, -1).point[PreparedStatementIO]
-      
+
       }
+
+    // // unpack an hlist
+    // def unpack(t: Type): List[Type] =
+    //   t.typeArgs match {
+    //     case h :: t :: Nil => h :: unpack(t)
+    //     case Nil => Nil
+    //   }
 
     /** The interpolator implementation. */
     def impl[A](a: Tree): Tree = {
@@ -127,11 +134,23 @@ object TSql {
       val q"doobie.tsql.`package`.toTsqlInterpolator(scala.StringContext.apply(..$parts)).tsql" = c.prefix.tree
       val sql = parts.map { case Literal(Constant(s: String)) => s } .mkString("?")
 
+      // println("** types are " + unpack(a.tpe))
+      // println("** parts are " + parts)
+      //
+      // import \&/._
+      // val parts2 = parts.map { case Literal(Constant(s: String)) => s }
+      // val xx = (parts2 align unpack(a.tpe)).map {
+      //   case Both(s, ConstantType(Constant(k: String))) if s.endsWith("#") => s.init + k
+      //   case Both(s, t) => s + "?"
+      //   case This(s)    => s
+      // }
+      // println(xx.mkString)
+
       // For returning columns we use a comment. If returned columns are specified then the
       // statement must not have any output columns otherwise. The resulting QueryIO/QueryO will
       // have an output type of Any.
       val retPat = "-- returning"
-      val returning: List[String] = 
+      val returning: List[String] =
         sql.lines.toList.fproduct(_.indexOf(retPat)).find(_._2 >= 0).foldMap { case (s, i) =>
           s.substring(i + retPat.length).split(",").toList.map(_.trim)
         }
@@ -163,10 +182,10 @@ object TSql {
           SqlExceptions.pos(e.getMessage) match {
             case Some((s, n)) => c.abort(sqlPos(n).getOrElse(pos), s)
             case None         => c.abort(pos, e.getMessage)
-          }        
+          }
         case \/-(d) => d
       }
-   
+
       // TODO: get rid of repetition of the it =:= HNil cases.
 
       // There are two cases. If there is only one string literal "part" then there are no
@@ -182,7 +201,7 @@ object TSql {
           case (_       , HNilType, _       ) => q"new doobie.tsql.UpdateIO[$it,$rot]($sql, $returning)"
           case (HNilType, _       , HNilType) => q"new doobie.tsql.QueryO[$ot]($sql)"
           case (_       , _       , HNilType) => q"new doobie.tsql.QueryIO[$it, $ot]($sql)"
-          case _ => 
+          case _ =>
             c.abort(c.enclosingPosition, "A statement that returns columns cannot also have a `-- returning ...` pragma.")
         }
 
@@ -211,7 +230,7 @@ object TSql {
           case (_       , HNilType, _       ) => q"new doobie.tsql.UpdateIO[$it,$rot]($sql, $returning).applyProduct($a)($write)"
           case (HNilType, _       , HNilType) => q"new doobie.tsql.QueryO[$ot]($sql)"
           case (_       , _       , HNilType) => q"new doobie.tsql.QueryIO[$it, $ot]($sql).applyProduct($a)($write)"
-          case _ => 
+          case _ =>
             c.abort(c.enclosingPosition, "A statement that returns columns cannot also have a `-- returning ...` pragma.")
         }
 
@@ -225,11 +244,11 @@ object TSql {
 
 object SqlExceptions {
 
-  /** 
+  /**
    * Try to get the error position from a SQLException message, returning the residual message
    * without the position information, and the position as a character offset.
    */
-  def pos(e: String): Option[(String, Int)] = 
+  def pos(e: String): Option[(String, Int)] =
     pgPos(e) // orElse ...
 
   // org.postgresql.util.PSQLException includes the 1-indexed position in the last line
@@ -242,8 +261,3 @@ object SqlExceptions {
   }
 
 }
-
-
-
-
-

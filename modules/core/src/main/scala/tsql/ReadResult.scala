@@ -9,7 +9,10 @@ import scalaz._, Scalaz._
  * Typeclass witnessing that a `ResultSet` can be read and accumulated into some type `A` under
  * row-level constraint `O`.
  */
-case class ReadResult[+O, A](run: ResultSetIO[A])
+case class ReadResult[+O, A](run: ResultSetIO[A]) {
+  def map[B](f: A => B): ReadResult[O, B] =
+    ReadResult(run.map(f))
+}
 
 object ReadResult extends ReadResultInstances1 {
 
@@ -43,6 +46,10 @@ object ReadResult extends ReadResultInstances1 {
         b += r.unsafeGet(rs, 1)
       b.result()
     }
+
+  /** If we can read a row into Map[A, B] we can read into A => B */
+  implicit def FunctionReadResult[O, A, B](implicit ev: ReadResult[O, Map[A, B]]): ReadResult[O, A => B] =
+    ev.map(a => a)
 
   /** 
    * If we can read a row as `A` under constraint `O`, we can read a 1-row resultset into `A`.
