@@ -5,7 +5,7 @@ val amm = taskKey[Unit]("Run the Ammonite REPL")
 val ammSettings = Seq(
   libraryDependencies += "com.lihaoyi" % "ammonite-repl" % "0.6.2" % "test" cross CrossVersion.full,
   amm := toError((runner in run).value.run(
-      "ammonite.repl.Main", 
+      "ammonite.repl.Main",
       Attributed.data((fullClasspath in Test).value), {
         val opts = scalacOptions.value.mkString("List(\"", "\",\"", "\")")
         List("-p", s"compiler.settings.processArguments($opts, true)\n${initialCommands.value}")
@@ -117,7 +117,7 @@ lazy val h2 = project.in(file("modules/h2"))
     name := "doobie-tsql-h2",
     scalacOptions ++= Seq(
       "-Xmacro-settings:doobie.driver=org.h2.Driver",
-      "-Xmacro-settings:doobie.connect=jdbc:h2:world",
+      "-Xmacro-settings:doobie.connect=jdbc:h2:zip:modules/h2/world.zip!/world",
       "-Xmacro-settings:doobie.user=",
       "-Xmacro-settings:doobie.password="
     ),
@@ -176,4 +176,3 @@ lazy val docs = project.in(file("modules/docs"))
     }
   )
   .dependsOn(postgres)
-
