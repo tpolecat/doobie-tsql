@@ -14,11 +14,11 @@ See the [**EXAMPLE**](EXAMPLE.md) for much more information.
 
 ### Building
 
-Right now you need to set up the World database from doobie in Posgtgres and MySQL, respectively, if you want to compile those modules. The connect information is in the build since it's a compile-time thing now.
+If you want to build and run the tests you will need to set up MySQL and Postgres as specified in the `.travis.yml` file. The H2 tests don't require any setup.
 
 ### TODO
 
-- [ ] CI, etc.
+- [x] CI, etc.
 - [ ] better handling of credentials
 - [x] Updates returning generated keys.
 - [x] Bulk updates.
