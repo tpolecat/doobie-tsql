@@ -3,9 +3,9 @@
 
 This tutorial assumes you are familiar with **doobie** and know what to do once you have a `ConnectionIO`. The examples given here are simply constructions to demonstrate types and are never executed.
 
-To play along at home fetch the repo and then do `sbt docs/console`. There is currently no published artifact. We're using the same test database as the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.3/00-index.html) so check that out if you need to set it up. We will use the same imports as with normal **doobie**, but we also import `tsql._`. 
+To play along at home fetch the repo and then do `sbt docs/console`. There is currently no published artifact. We're using the same test database as the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.3/00-index.html) so check that out if you need to set it up. We will use the same imports as with normal **doobie**, but we also import `tsql._`.
 
-```tut
+```tut:silent
 import doobie.imports._, doobie.tsql._
 import shapeless._
 ```
@@ -16,7 +16,7 @@ import doobie.tsql.amm._, pprint.TPrint, pprint.Config.Colors._
 def tp[A:TPrint](a:A) = println(pprint.tprint[A])
 ```
 
-Ok. first thing to notice is that SQL literals are checked at compile-time. If the SQL doesn't make sense to the database it's a type error. 
+Ok. first thing to notice is that SQL literals are checked at compile-time. If the SQL doesn't make sense to the database it's a type error.
 
 ```tut:fail
 tsql"select id, name from country"
@@ -66,7 +66,7 @@ val up = tsql"delete from country where population = ?"
 
 If we unpack this type and rewrite the singletons to be more readable it looks like this:
 
-```tut
+```tut:evaluated
 tp(up)
 ```
 
@@ -99,7 +99,7 @@ val up = tsql"update country set name = ? where code = ? or population > ?"
 
 The type cleans up to be:
 
-```tut
+```tut:evaluated
 tp(up)
 ```
 
@@ -120,7 +120,7 @@ val q = tsql"select code, name, population from country"
 
 Let's look at this type more closely:
 
-```tut
+```tut:evaluated
 tp(q)
 ```
 
@@ -189,7 +189,3 @@ tsql"select name, population from city where id = 42".process[(String, Int)]
 - schema-constrained mappings
 
 ### Using TPrint
-
-
-
-
