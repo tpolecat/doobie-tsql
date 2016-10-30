@@ -7,6 +7,9 @@ scala:
 jdk:
   - oraclejdk8
 
+addons:
+  postgresql: "9.3"
+
 before_script:
   - psql -c 'create database world;' -U postgres && \
   - psql -c '\i modules/postgres/world.sql' -d world -U postgres && \
