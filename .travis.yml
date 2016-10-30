@@ -2,12 +2,19 @@ language: scala
 
 scala:
   - 2.11.8
-  - 2.10.6
+  # - 2.10.6
 
 jdk:
   - oraclejdk8
 
-script: sbt ++$TRAVIS_SCALA_VERSION test tut
+before_script:
+  - psql -c 'create database world;' -U postgres && \
+  - psql -c '\i modules/postgres/world.sql' -d world -U postgres && \
+  - psql -d world -c "create extension postgis" -U postgres && \
+  - psql -d world -c "create type myenum as enum ('foo', 'bar')" -U postgres
+
+script:
+  - sbt ++$TRAVIS_SCALA_VERSION core/test h2/test postgres/test
 
 cache:
   directories:
