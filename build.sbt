@@ -139,7 +139,7 @@ lazy val mysql = project.in(file("modules/mysql"))
       "-Xmacro-settings:doobie.driver=com.mysql.cj.jdbc.Driver",
       "-Xmacro-settings:doobie.connect=jdbc:mysql://localhost/world?useSSL=false&serverTimezone=UTC",
       "-Xmacro-settings:doobie.user=root",
-      "-Xmacro-settings:doobie.password=mysql",
+      "-Xmacro-settings:doobie.password=",
       "-Xmacro-settings:doobie.checkParameters=false"
     ),
     libraryDependencies ++= Seq(
