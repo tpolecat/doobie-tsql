@@ -20,7 +20,7 @@ before_script:
   - psql -d world -c "create type myenum as enum ('foo', 'bar')" -U postgres
 
 script:
-  - sbt ++$TRAVIS_SCALA_VERSION test docs/tut
+  - sbt ++$TRAVIS_SCALA_VERSION test
 
 cache:
   directories:

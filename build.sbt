@@ -149,7 +149,7 @@ lazy val docs = project.in(file("modules/docs"))
       "-Xmacro-settings:doobie.password="
     ),
     libraryDependencies ++= Seq(
-      "org.tpolecat"  %% "doobie-postgresql" % "0.3.1-M2"
+      "org.tpolecat"  %% "doobie-postgres" % "0.3.1-M2"
     ),
     tutTargetDirectory := (baseDirectory in root).value,
     tut := {
