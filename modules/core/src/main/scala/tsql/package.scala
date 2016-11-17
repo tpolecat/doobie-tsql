@@ -14,35 +14,34 @@ package object tsql {
   // borrowed from hi.connection
   private[tsql] def liftProcess[O, A](
     create: ConnectionIO[PreparedStatement],
-    prep:   PreparedStatementIO[Unit], 
+    prep:   PreparedStatementIO[Unit],
     exec:   PreparedStatementIO[ResultSet])(
     implicit ev: Read[O, A]
   ): Process[ConnectionIO, A] = {
-    
-    val preparedStatement: Process[ConnectionIO, PreparedStatement] = 
-      resource(
-        create)(ps =>
-        FC.lift(ps, FPS.close))(ps =>
-        Option(ps).point[ConnectionIO]).take(1) // note
-  
-    def results(ps: PreparedStatement): Process[ConnectionIO, A] =
-      resource(
-        FC.lift(ps, exec))(rs =>
-        FC.lift(rs, FRS.close))(rs =>
-        FC.lift(rs, FRS.next.flatMap {
-          case false => Option.empty[A].point[ResultSetIO]
-          case true  => ev.read(1).map(Option(_))
-        }))
 
-    for {
-      ps <- preparedStatement
-      _  <- Process.eval(FC.lift(ps, prep))
-      a  <- results(ps)
-    } yield a
+    // val preparedStatement: Process[ConnectionIO, PreparedStatement] =
+    //   resource(
+    //     create)(ps =>
+    //     FC.lift(ps, FPS.close))(ps =>
+    //     Option(ps).point[ConnectionIO]).take(1) // note
+    //
+    // def results(ps: PreparedStatement): Process[ConnectionIO, A] =
+    //   resource(
+    //     FC.lift(ps, exec))(rs =>
+    //     FC.lift(rs, FRS.close))(rs =>
+    //     FC.lift(rs, FRS.next.flatMap {
+    //       case false => Option.empty[A].point[ResultSetIO]
+    //       case true  => ev.read(1).map(Option(_))
+    //     }))
+    //
+    // for {
+    //   ps <- preparedStatement
+    //   _  <- Process.eval(FC.lift(ps, prep))
+    //   a  <- results(ps)
+    // } yield a
+
+    ???
 
   }
 
 }
-
-
-

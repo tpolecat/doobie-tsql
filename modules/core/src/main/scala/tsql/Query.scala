@@ -12,7 +12,7 @@ class QueryIO[I,O](sql: String) extends ProductArgs {
 }
 
 class QueryO[O](sql: String, prepare: PreparedStatementIO[_]) {
-  
+
   def this(sql: String) =
     this(sql, ().point[PreparedStatementIO])
 
@@ -29,4 +29,3 @@ class QueryO[O](sql: String, prepare: PreparedStatementIO[_]) {
     as(ReadResult.optionReadResult)
 
 }
-

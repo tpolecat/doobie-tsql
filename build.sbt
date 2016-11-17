@@ -1,30 +1,13 @@
-
-
-val amm = taskKey[Unit]("Run the Ammonite REPL")
-
-val ammSettings = Seq(
-  libraryDependencies += "com.lihaoyi" % "ammonite-repl" % "0.6.2" % "test" cross CrossVersion.full,
-  amm := toError((runner in run).value.run(
-      "ammonite.repl.Main",
-      Attributed.data((fullClasspath in Test).value), {
-        val opts = scalacOptions.value.mkString("List(\"", "\",\"", "\")")
-        List("-p", s"compiler.settings.processArguments($opts, true)\n${initialCommands.value}")
-      },
-      streams.value.log
-  ))
-)
-
-aggregate in amm := false
-
 lazy val buildSettings = Seq(
   organization := "org.tpolecat",
+  scalaOrganization := "org.typelevel",
   licenses ++= Seq(("MIT", url("http://opensource.org/licenses/MIT"))),
-  scalaVersion := "2.11.8",
+  scalaVersion := "2.12.0",
+  crossScalaVersions := Seq("2.11.8", scalaVersion.value),
   libraryDependencies ++= macroParadise(scalaVersion.value) ++ Seq(
-    "org.scalacheck" %% "scalacheck"  % "1.13.0" % "test",
-    "org.specs2"     %% "specs2-core" % "3.7.1"  % "test"
+    "org.scalacheck" %% "scalacheck"  % "1.13.4" % "test",
+    "org.specs2"     %% "specs2-core" % "3.8.6"  % "test"
   )
-  // no cross version yet ... 2.10 doesn't quite work, no 2.12 for doobie 0.2.x
 )
 
 def macroParadise(v: String): List[ModuleID] =
@@ -43,16 +26,17 @@ lazy val commonSettings = Seq(
       "-unchecked",
       "-Xlint",
       "-Yno-adapted-args",
-      "-Ywarn-dead-code"
+      "-Ywarn-dead-code",
+      "-Yliteral-types"
       // "-Ywarn-value-discard"
     ),
-    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.7.1"),
+    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3"),
     publishArtifact in (Compile, packageDoc) := false
-) ++ ammSettings
+)
 
 lazy val root = project.in(file("."))
   .settings(buildSettings)
-  .aggregate(core, ammonite, postgres, h2, mysql)
+  .aggregate(core, postgres, h2, mysql)
   // .settings(aggregate in amm := false)
 
 lazy val core = project.in(file("modules/core"))
@@ -64,7 +48,7 @@ lazy val core = project.in(file("modules/core"))
       "org.scala-lang" % "scala-reflect"  % scalaVersion.value,
       "org.scala-lang" % "scala-compiler" % scalaVersion.value,
       "org.typelevel" %% "macro-compat"   % "1.1.1",
-      "org.tpolecat"  %% "doobie-core"    % "0.3.0"
+      "org.tpolecat"  %% "doobie-core"    % "0.3.1-M2"
     ),
     addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
   )
@@ -90,7 +74,7 @@ lazy val postgres = project.in(file("modules/postgres"))
       "-Xmacro-settings:doobie.password="
     ),
     libraryDependencies ++= Seq(
-      "org.tpolecat"  %% "doobie-contrib-postgresql" % "0.3.0"
+      "org.tpolecat"  %% "doobie-postgres" % "0.3.1-M2"
     ),
     initialCommands := """
       |import scalaz._,Scalaz._
@@ -104,11 +88,11 @@ lazy val postgres = project.in(file("modules/postgres"))
       |import org.postgresql.geometric._
       |import doobie.tsql._
       |import shapeless._
-      |import doobie.tsql.amm._, pprint.TPrint, pprint.Config.Colors._
-      |def tp[A:TPrint](a:A) = println(pprint.tprint[A])
+      |//import doobie.tsql.amm._, pprint.TPrint, pprint.Config.Colors._
+      |//def tp[A:TPrint](a:A) = println(pprint.tprint[A])
       """.stripMargin
   )
-  .dependsOn(core, ammonite)
+  .dependsOn(core)
 
 lazy val h2 = project.in(file("modules/h2"))
   .settings(buildSettings)
@@ -117,18 +101,18 @@ lazy val h2 = project.in(file("modules/h2"))
     name := "doobie-tsql-h2",
     scalacOptions ++= Seq(
       "-Xmacro-settings:doobie.driver=org.h2.Driver",
-      "-Xmacro-settings:doobie.connect=jdbc:h2:zip:modules/h2/world.zip!/world",
+      "-Xmacro-settings:doobie.connect=jdbc:h2:zip:./modules/h2/world.zip!/world",
       "-Xmacro-settings:doobie.user=",
       "-Xmacro-settings:doobie.password="
     ),
     libraryDependencies ++= Seq(
-      "org.tpolecat"  %% "doobie-contrib-h2" % "0.3.0"
+      "org.tpolecat"  %% "doobie-h2" % "0.3.1-M2"
     ),
     initialCommands := s"""
       |import doobie.tsql._, doobie.tsql.amm._, scalaz._, Scalaz._, doobie.imports._, shapeless._
       |""".stripMargin
   )
-  .dependsOn(core, ammonite)
+  .dependsOn(core)
 
 lazy val mysql = project.in(file("modules/mysql"))
   .settings(buildSettings)
@@ -149,7 +133,7 @@ lazy val mysql = project.in(file("modules/mysql"))
       |import doobie.tsql._, doobie.tsql.amm._, scalaz._, Scalaz._, doobie.imports._, shapeless._
       |""".stripMargin
   )
-  .dependsOn(core, ammonite)
+  .dependsOn(core)
 
 
 lazy val docs = project.in(file("modules/docs"))
@@ -165,7 +149,7 @@ lazy val docs = project.in(file("modules/docs"))
       "-Xmacro-settings:doobie.password="
     ),
     libraryDependencies ++= Seq(
-      "org.tpolecat"  %% "doobie-contrib-postgresql" % "0.3.0"
+      "org.tpolecat"  %% "doobie-postgresql" % "0.3.1-M2"
     ),
     tutTargetDirectory := (baseDirectory in root).value,
     tut := {
