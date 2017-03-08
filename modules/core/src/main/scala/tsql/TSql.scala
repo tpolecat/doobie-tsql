@@ -61,7 +61,7 @@ object TSql {
     }
 
     /** Get a Transactor[IO] from macro settings. */
-    def xa: Transactor[IO] = {
+    def xa: Transactor[IO, _] = {
       val driver   = settingOrFail("driver",   "org.h2.Driver")
       val connect  = settingOrFail("connect",  "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1")
       val user     = settingOrFail("user",     "bobDole")

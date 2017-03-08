@@ -22,7 +22,7 @@ object ReadDerivationSpec extends Specification {
       implicitly[Read[M[JdbcInteger] :: M[JdbcVarChar] :: HNil, (Int, String)]]
       true
     }
-  
+
     "support generic products" in {
       case class Foo(n: Int, s: String)
       implicitly[Read[M[JdbcInteger] :: M[JdbcVarChar] :: HNil, Foo]]
@@ -46,15 +46,15 @@ object ReadDerivationSpec extends Specification {
 
     type X = M[JdbcInteger] :: M[JdbcInteger] :: M[JdbcVarChar] :: HNil
 
-    "support nested tuples (right-associated)" in {
-      implicitly[Read[X, (Int, (Int, String))]]
-      true
-    }
-
-    "support nested tuples (left-associated)" in {
-      implicitly[Read[X, ((Int, Int), String)]]
-      true
-    }
+    // "support nested tuples (right-associated)" in {
+    //   implicitly[Read[X, (Int, (Int, String))]]
+    //   true
+    // }
+    //
+    // "support nested tuples (left-associated)" in {
+    //   implicitly[Read[X, ((Int, Int), String)]]
+    //   true
+    // }
 
     "support nested generic products (right-associated)" in {
       case class Foo(n: Int, p: Bar)
@@ -62,7 +62,7 @@ object ReadDerivationSpec extends Specification {
       implicitly[Read[X, Foo]]
       true
     }
-    
+
     "support nested generic products (right-associated)" in {
       case class Foo(n: Bar, p: String)
       case class Bar(n: Int, s: Int)
