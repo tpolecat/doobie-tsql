@@ -159,7 +159,7 @@ object TSql {
       // TODO: remove comment from sql since it messes with postgres (at least)
 
       // Source positon for offset `n` characters into the SQL itself. If the database reports an
-      // error at pos N this method will give you the source position where the carat should go.
+      // error at pos N this method will give you the source position where the caret should go.
       def sqlPos(n: Int): Option[Position] = {
         def go(n: Int, ts: List[Tree]): Option[Position] = {
           ts match {
