@@ -1,16 +1,10 @@
 package doobie.tsql.postgres
 
-import shapeless.{ Witness => W, _ }
-import shapeless.test._
-
-import doobie.imports.ConnectionIO
 import org.specs2.mutable.Specification
 import doobie.tsql._
-import doobie.tsql.JdbcType._
-import doobie.tsql.postgres._
 
 object PGWriteInstanceSpec extends Specification {
-  
+
   def ok[A](a: A): Boolean = true
 
   "Boolean Array Write" should {

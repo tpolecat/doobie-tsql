@@ -1,11 +1,10 @@
-package doobie.tsql 
+package doobie.tsql
 
 import doobie.imports.{ FPS, PreparedStatementIO }
 import java.sql.PreparedStatement
 import shapeless.{ HNil, HList, ::, Lazy, Generic, =:!=, <:!<, Witness }
 import scalaz.ContravariantCoyoneda
 import JdbcType._
-import scala.collection.generic.CanBuildFrom
 
 import scala.annotation.unchecked.uncheckedVariance
 
@@ -54,7 +53,7 @@ trait WriteDerivations {
     implicit ev: Write[ParameterMeta[J, S], A],
              no: A <:!< Option[X] forSome { type X }
   ): Write[ParameterMeta[J, S], Option[A]] =
-    Write.lift { 
+    Write.lift {
       case (rs, n, Some(a)) => ev.unsafeSet(rs, n, a)
       case (rs, n, None)    => rs.setNull(n, JdbcType.valueOf[J]) //, JdbcType.valueOf[S]) hmm..
     }
@@ -65,14 +64,14 @@ trait WriteDerivations {
   implicit def hcons[MH, H, MT <: HList, T <: HList](
     implicit h: Write[MH, H],
              t: Lazy[Write[MT, T]]
-  ): Write[MH :: MT, H :: T] = 
-    Write.lift { (rs, n, l) => 
+  ): Write[MH :: MT, H :: T] =
+    Write.lift { (rs, n, l) =>
       h      .unsafeSet(rs, n,     l.head)
       t.value.unsafeSet(rs, n + 1, l.tail)
     }
 
   implicit def writeGeneric[I, A, B](
-    implicit g: Generic.Aux[A, B], 
+    implicit g: Generic.Aux[A, B],
              r: Lazy[Write[I, B]]
    ): Write[I, A] =
     Write.lift((rs, n, a) => r.value.unsafeSet(rs, n, g.to(a)))
@@ -90,7 +89,7 @@ trait WriteDerivations {
 }
 
 // N.B. Write instances are prioritized to be unique by Java type, which is reasonable because the
-// specification singles out primary write targets. This allows us to infer Any for the input 
+// specification singles out primary write targets. This allows us to infer Any for the input
 // constraint when terrible databases like MySQL refuse to compute parameter metadata and get a
 // reasonable Write instance; i.e., Write[Any, (Int, String, Float)] will just give us our default
 // mappings and all is well.

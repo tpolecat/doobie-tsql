@@ -1,7 +1,6 @@
 package doobie.tsql.mysql
 
-import shapeless.{ Witness => W, _ }
-import shapeless.test._
+import shapeless._
 
 import doobie.imports.ConnectionIO
 import org.specs2.mutable.Specification
@@ -9,11 +8,11 @@ import doobie.tsql._
 import doobie.tsql.JdbcType._
 
 object PGInferenceSpec extends Specification {
-  
-  type MsVARCHAR = W.`"VARCHAR"`.T
-  type PGbpchar  = W.`"bpchar"`.T
-  type PGtext    = W.`"text"`.T
-  type MsINT    = W.`"INT"`.T
+
+  type MsVARCHAR = "VARCHAR"
+  type PGbpchar  = "bpchar"
+  type PGtext    = "text"
+  type MsINT     = "INT"
 
   def checkType[A](a: A): Boolean = true
 
@@ -59,8 +58,8 @@ object PGInferenceSpec extends Specification {
     "infer QueryO[«fancy»] for non-parameterized select" in {
       val a = tsql"select xname, population from city"
       checkType[QueryO[
-        ColumnMeta[JdbcVarChar, MsVARCHAR, NoNulls, W.`"city"`.T, W.`"xname"`     .T]  ::
-        ColumnMeta[JdbcInteger, MsINT,     NoNulls, W.`"city"`.T, W.`"population"`.T]  ::
+        ColumnMeta[JdbcVarChar, MsVARCHAR, NoNulls, "city", "xname"     ]  ::
+        ColumnMeta[JdbcInteger, MsINT,     NoNulls, "city", "population"]  ::
         HNil
       ]](a)
     }
@@ -69,8 +68,8 @@ object PGInferenceSpec extends Specification {
       val s = "irrelevant"
       val a = tsql"select xname, population from city where countrycode = $s"
       checkType[QueryO[
-        ColumnMeta[JdbcVarChar, MsVARCHAR, NoNulls, W.`"city"`.T, W.`"xname"`      .T]  ::
-        ColumnMeta[JdbcInteger, MsINT,     NoNulls, W.`"city"`.T, W.`"population"`.T]  ::
+        ColumnMeta[JdbcVarChar, MsVARCHAR, NoNulls, "city", "xname"     ]  ::
+        ColumnMeta[JdbcInteger, MsINT,     NoNulls, "city", "population"]  ::
         HNil
       ]](a)
     }
@@ -79,8 +78,8 @@ object PGInferenceSpec extends Specification {
       val a = tsql"select xname, population from city where countrycode = ?"
       checkType[QueryIO[
         Any,
-        ColumnMeta[JdbcVarChar, MsVARCHAR, NoNulls, W.`"city"`.T, W.`"xname"`     .T]  ::
-        ColumnMeta[JdbcInteger, MsINT,     NoNulls, W.`"city"`.T, W.`"population"`.T]  ::
+        ColumnMeta[JdbcVarChar, MsVARCHAR, NoNulls, "city", "xname"     ]  ::
+        ColumnMeta[JdbcInteger, MsINT,     NoNulls, "city", "population"]  ::
         HNil
       ]](a)
     }

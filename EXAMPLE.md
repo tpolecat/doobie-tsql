@@ -17,7 +17,7 @@ Ok. first thing to notice is that SQL literals are checked at compile-time. If t
 
 ```scala
 scala> tsql"select id, name from country"
-<console>:29: error: ERROR: column "id" does not exist
+<console>:26: error: ERROR: column "id" does not exist
        tsql"select id, name from country"
                    ^
 ```
@@ -43,7 +43,7 @@ The inferred type of a `tsql` literal is potentially fancy, but in some cases ca
 
 ```scala
 scala> tsql"delete from country"
-res2: doobie.hi.ConnectionIO[Int] = Gosub(Suspend(PrepareStatement4(delete from country)),<function1>)
+res2: doobie.hi.ConnectionIO[Int] = Gosub(Suspend(PrepareStatement(delete from country)),doobie.hi.connection$$$Lambda$24847/1434061669@4244f0fc)
 ```
 
 Similarly an update with interpolated arguments is fully specified. As with the old `sql` interpolator the interpolated argument becomes a JDBC `setXXX` operation and is not an injection risk.
@@ -53,14 +53,14 @@ scala> val c = "USA"
 c: String = USA
 
 scala> tsql"delete from country where code = $c"
-res3: doobie.imports.ConnectionIO[Int] = Gosub(Suspend(PrepareStatement4(delete from country where code = ?)),<function1>)
+res3: doobie.imports.ConnectionIO[Int] = Gosub(Suspend(PrepareStatement(delete from country where code = ?)),doobie.hi.connection$$$Lambda$24847/1434061669@5ae946b0)
 ```
 
 In addition, the type of the argument must conform with the schema; a mismatch is a type error. For example, here we attempt to use `c` (a `String`) in a position where a numeric type is expected.
 
 ```scala
 scala> tsql"delete from country where population = $c"
-<console>:30: error: parameter types don't match up, sorry
+<console>:27: error: parameter types don't match up, sorry
        tsql"delete from country where population = $c"
             ^
 ```
@@ -69,7 +69,7 @@ The following update contain a `?` placeholder, yielding a fancier type.
 
 ```scala
 scala> val up = tsql"delete from country where population = ?"
-up: doobie.tsql.UpdateI[shapeless.::[doobie.tsql.ParameterMeta[Int(4),String("int4")],shapeless.HNil]] = doobie.tsql.UpdateI@60404f09
+up: doobie.tsql.UpdateI[doobie.tsql.ParameterMeta[Int(4),String("int4")] :: shapeless.HNil] = doobie.tsql.UpdateI@d4ffe1c
 ```
 
 If we unpack this type and rewrite the singletons to be more readable it looks like this:
@@ -92,7 +92,7 @@ We can now apply an argument of some type that satisfies the above constraint, a
 
 ```scala
 scala> up(42)
-res6: doobie.imports.ConnectionIO[Int] = Gosub(Suspend(PrepareStatement4(delete from country where population = ?)),<function1>)
+res6: doobie.imports.ConnectionIO[Int] = Gosub(Suspend(PrepareStatement(delete from country where population = ?)),doobie.hi.connection$$$Lambda$24847/1434061669@35fdcda5)
 ```
 
 Note that nullity is always unknown for parameters; if you wish to set a parameter to `NULL` you can use an `Option` type, and `None` will result in a `.setNull(...)` call on the underlying statement.
@@ -107,7 +107,7 @@ Multi-parameter placeholder queries become `UpdateI`s that take multiple argumen
 
 ```scala
 scala> val up = tsql"update country set name = ? where code = ? or population > ?"
-up: doobie.tsql.UpdateI[shapeless.::[doobie.tsql.ParameterMeta[Int(12),String("varchar")],shapeless.::[doobie.tsql.ParameterMeta[Int(1),String("bpchar")],shapeless.::[doobie.tsql.ParameterMeta[Int(4),String("int4")],shapeless.HNil]]]] = doobie.tsql.UpdateI@3068d843
+up: doobie.tsql.UpdateI[doobie.tsql.ParameterMeta[Int(12),String("varchar")] :: doobie.tsql.ParameterMeta[Int(1),String("bpchar")] :: doobie.tsql.ParameterMeta[Int(4),String("int4")] :: shapeless.HNil] = doobie.tsql.UpdateI@7efbf785
 ```
 
 The type cleans up to be:
@@ -125,7 +125,7 @@ And we can complete the specification by providing arguments that conform with t
 
 ```scala
 scala> up("foo", "bar", 123456)
-res8: doobie.imports.ConnectionIO[Int] = Gosub(Suspend(PrepareStatement4(update country set name = ? where code = ? or population > ?)),<function1>)
+res8: doobie.imports.ConnectionIO[Int] = Gosub(Suspend(PrepareStatement(update country set name = ? where code = ? or population > ?)),doobie.hi.connection$$$Lambda$24847/1434061669@64894e01)
 ```
 
 
@@ -135,7 +135,7 @@ res8: doobie.imports.ConnectionIO[Int] = Gosub(Suspend(PrepareStatement4(update 
 
 ```scala
 scala> val q = tsql"select code, name, population from country"
-q: doobie.tsql.QueryO[shapeless.::[doobie.tsql.ColumnMeta[Int(1),String("bpchar"),doobie.tsql.NoNulls,String("country"),String("code")],shapeless.::[doobie.tsql.ColumnMeta[Int(12),String("varchar"),doobie.tsql.NoNulls,String("country"),String("name")],shapeless.::[doobie.tsql.ColumnMeta[Int(4),String("int4"),doobie.tsql.NoNulls,String("country"),String("population")],shapeless.HNil]]]] = doobie.tsql.QueryO@75de9b7a
+q: doobie.tsql.QueryO[doobie.tsql.ColumnMeta[Int(1),String("bpchar"),doobie.tsql.NoNulls,String("country"),String("code")] :: doobie.tsql.ColumnMeta[Int(12),String("varchar"),doobie.tsql.NoNulls,String("country"),String("name")] :: doobie.tsql.ColumnMeta[Int(4),String("int4"),doobie.tsql.NoNulls,String("country"),String("population")] :: shapeless.HNil] = doobie.tsql.QueryO@7b5b64d1
 ```
 
 Let's look at this type more closely:
@@ -162,7 +162,7 @@ So a basic mapping might be a list of triples. Specifying this output type resul
 
 ```scala
 scala> q.as[List[(String, String, Int)]]
-res10: doobie.imports.ConnectionIO[List[(String, String, Int)]] = Gosub(Suspend(PrepareStatement4(select code, name, population from country)),<function1>)
+res10: doobie.imports.ConnectionIO[List[(String, String, Int)]] = Gosub(Suspend(PrepareStatement(select code, name, population from country)),doobie.hi.connection$$$Lambda$24847/1434061669@27ba29e1)
 ```
 
 We can also map case classes.
@@ -172,7 +172,7 @@ scala> case class Country(code: String, name: String, population: Int)
 defined class Country
 
 scala> q.as[Vector[Country]]
-res11: doobie.imports.ConnectionIO[Vector[Country]] = Gosub(Suspend(PrepareStatement4(select code, name, population from country)),<function1>)
+res11: doobie.imports.ConnectionIO[Vector[Country]] = Gosub(Suspend(PrepareStatement(select code, name, population from country)),doobie.hi.connection$$$Lambda$24847/1434061669@60c6cfe6)
 ```
 
 And nested products (in this case a pair with a case class as an element).
@@ -182,31 +182,31 @@ scala> case class CountryInfo(name: String, population: Int)
 defined class CountryInfo
 
 scala> q.as[Array[(String, CountryInfo)]]
-res12: doobie.imports.ConnectionIO[Array[(String, CountryInfo)]] = Gosub(Suspend(PrepareStatement4(select code, name, population from country)),<function1>)
+res12: doobie.imports.ConnectionIO[Array[(String, CountryInfo)]] = Gosub(Suspend(PrepareStatement(select code, name, population from country)),doobie.hi.connection$$$Lambda$24847/1434061669@25ef7138)
 ```
 
 If we can map a row to a pair as above, we can accumulate directly to a `Map`, which can be useful.
 
 ```scala
 scala> q.as[Map[String, CountryInfo]]
-res13: doobie.imports.ConnectionIO[Map[String,CountryInfo]] = Gosub(Suspend(PrepareStatement4(select code, name, population from country)),<function1>)
+res13: doobie.imports.ConnectionIO[Map[String,CountryInfo]] = Gosub(Suspend(PrepareStatement(select code, name, population from country)),doobie.hi.connection$$$Lambda$24847/1434061669@14baa348)
 ```
 
 We can also ask for a `.unique` or `.option` result as with the existing `sql` interpolator.
 
 ```scala
 scala> tsql"select name, population from city where id = 42".unique[(String, Int)]
-res14: doobie.imports.ConnectionIO[(String, Int)] = Gosub(Suspend(PrepareStatement4(select name, population from city where id = 42)),<function1>)
+res14: doobie.imports.ConnectionIO[(String, Int)] = Gosub(Suspend(PrepareStatement(select name, population from city where id = 42)),doobie.hi.connection$$$Lambda$24847/1434061669@676ac907)
 
 scala> tsql"select name, population from city where id = 42".option[(String, Int)]
-res15: doobie.imports.ConnectionIO[Option[(String, Int)]] = Gosub(Suspend(PrepareStatement4(select name, population from city where id = 42)),<function1>)
+res15: doobie.imports.ConnectionIO[Option[(String, Int)]] = Gosub(Suspend(PrepareStatement(select name, population from city where id = 42)),doobie.hi.connection$$$Lambda$24847/1434061669@1f1f4c0c)
 ```
 
 And as with the current `sql` interpolator we can ask for a `Process`.
 
 ```scala
 scala> tsql"select name, population from city where id = 42".process[(String, Int)]
-res16: scalaz.stream.Process[doobie.imports.ConnectionIO,(String, Int)] = Append(Halt(End),Vector(<function1>))
+res16: scalaz.stream.Process[doobie.imports.ConnectionIO,(String, Int)] = Await(Suspend(PrepareStatement(select name, population from city where id = 42)),scalaz.stream.Process$Await$$Lambda$26856/984968045@45303cd1,scalaz.stream.Process$$$Lambda$26853/1785558120@444cd235)
 ```
 
 ### Parameterized Selects

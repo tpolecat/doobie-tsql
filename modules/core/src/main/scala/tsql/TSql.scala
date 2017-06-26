@@ -1,6 +1,5 @@
 package doobie.tsql
 
-import scala.collection.JavaConverters._
 import scala.language.experimental.macros
 import scala.reflect.macros.whitebox.Context
 import shapeless.{ HNil, ProductArgs }
@@ -8,8 +7,6 @@ import macrocompat.bundle
 import doobie.imports._
 import scalaz._, Scalaz._, scalaz.effect.IO
 import java.sql.ResultSetMetaData._
-import java.sql.ParameterMetaData._
-import JdbcType._
 
 object TSql {
 
@@ -132,7 +129,10 @@ object TSql {
 
       // Our SQL
       val q"doobie.tsql.`package`.toTsqlInterpolator(scala.StringContext.apply(..$parts)).tsql" = c.prefix.tree
-      val sql = parts.map { case Literal(Constant(s: String)) => s } .mkString("?")
+      val sql = parts.map {
+        case Literal(Constant(s: String)) => s
+        case tree => c.abort(c.enclosingPosition, s"Implementation error, inexhaustive match. Expected Literal(Constant(...)), found $tree")
+      } .mkString("?")
 
       // println("** types are " + unpack(a.tpe))
       // println("** parts are " + parts)
@@ -168,6 +168,7 @@ object TSql {
               val p = t.pos
               if (n < s.length) Some(p.withPoint(p.point + n))
               else go(n - s.length - 2, ts)
+            case tree :: _ => c.abort(c.enclosingPosition, s"Implementation error, inexhaustive match. Expected Literal(Constant(...)), found $tree")
           }
         }
         go(n, parts)

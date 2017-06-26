@@ -12,7 +12,7 @@ package object amm {
 
   implicit def QueryIOTprint[I: TPrint, O: TPrint]: TPrint[QueryIO[I, O]] =
     TPrint.lambda { implicit cfg =>
-      val ts = TPrint.literal("QueryIO").render(cfg)
+      // val ts = TPrint.literal("QueryIO").render(cfg)
       val (i, o) = (tprint[I], tprint[O])
       val i0 = brack(realign(i, 2), 2)
       val o0 = brack(realign(o, 5), 2)
@@ -21,7 +21,7 @@ package object amm {
 
   implicit def QueryOTPrint[O: TPrint]: TPrint[QueryO[O]] =
     TPrint.lambda { implicit cfg =>
-      val ts = TPrint.literal("QueryO").render(cfg)
+      // val ts = TPrint.literal("QueryO").render(cfg)
       val o = tprint[O]
       val o0 = brack(realign(o, 5), 2)
       s"QueryO[\n$o0\n]"
@@ -30,7 +30,7 @@ package object amm {
 
   implicit def UpdateIOTprint[I: TPrint, O: TPrint]: TPrint[UpdateIO[I, O]] =
     TPrint.lambda { implicit cfg =>
-      val ts = TPrint.literal("UpdateIO").render(cfg)
+      // val ts = TPrint.literal("UpdateIO").render(cfg)
       val (i, o) = (tprint[I], tprint[O])
       val i0 = brack(realign(i, 2), 2)
       val o0 = brack(realign(o, 5), 2)
@@ -39,7 +39,7 @@ package object amm {
 
   implicit def UpdateOTPrint[O: TPrint]: TPrint[UpdateO[O]] =
     TPrint.lambda { implicit cfg =>
-      val ts = TPrint.literal("UpdateO").render(cfg)
+      // val ts = TPrint.literal("UpdateO").render(cfg)
       val o = tprint[O]
       val o0 = brack(realign(o, 5), 2)
       s"UpdateO[\n$o0\n]"
@@ -47,7 +47,7 @@ package object amm {
 
   implicit def UpdateITPrint[I: TPrint]: TPrint[UpdateI[I]] =
     TPrint.lambda { implicit cfg =>
-      val ts = TPrint.literal("UpdateI").render(cfg)
+      // val ts = TPrint.literal("UpdateI").render(cfg)
       val i = tprint[I]
       val i0 = brack(realign(i, 2), 2)
       s"UpdateI[\n$i0\n]"
@@ -97,8 +97,8 @@ package object amm {
       "  " + tprint[ColumnMeta[J, S, N, T, C]] + " ::\n" ++ tprint[L]
     }
 
-  // JDBC singleton Int to useful string 
-  private def jdbc[J <: Int: TPrint]: String = 
+  // JDBC singleton Int to useful string
+  private def jdbc[J <: Int: TPrint]: String =
     tprint[J].toInt match {
       case ARRAY         =>  "ARRAY"
       case BIGINT        =>  "BIGINT"

@@ -1,7 +1,6 @@
 package doobie
 
 import doobie.imports._
-import doobie.util.process._
 import java.sql.{ PreparedStatement, ResultSet }
 import scalaz._, Scalaz._
 import scalaz.stream._

@@ -12,7 +12,7 @@ import shapeless._
 
 ```tut:invisible
 // borrow some stuff from ammonite so we can format the types nicely
-import doobie.tsql.amm._, pprint.TPrint, pprint.Config.Colors._
+import doobie.tsql.amm._, pprint.TPrint //, pprint.Config.Colors._
 def tp[A:TPrint](a:A) = println(pprint.tprint[A])
 ```
 
