@@ -1,9 +1,7 @@
 
 ### Quick Start
 
-This tutorial assumes you are familiar with **doobie** and know what to do once you have a `ConnectionIO`. The examples given here are simply constructions to demonstrate types and are never executed.
-
-To play along at home fetch the repo and then do `sbt docs/console`. There is currently no published artifact. We're using the same test database as the [**book of doobie**](http://tpolecat.github.io/doobie-0.2.3/00-index.html) so check that out if you need to set it up. We will use the same imports as with normal **doobie**, but we also import `tsql._`.
+This tutorial assumes you are familiar with **doobie** and know what to do once you have a `ConnectionIO`. The examples given here are simply constructions to demonstrate types and are never executed. We will use the same imports as with normal **doobie**, but we also import `tsql._`.
 
 ```scala
 import doobie.imports._, doobie.tsql._
@@ -69,7 +67,7 @@ The following update contain a `?` placeholder, yielding a fancier type.
 
 ```scala
 scala> val up = tsql"delete from country where population = ?"
-up: doobie.tsql.UpdateI[doobie.tsql.ParameterMeta[Int(4),String("int4")] :: shapeless.HNil] = doobie.tsql.UpdateI@692b4613
+up: doobie.tsql.UpdateI[doobie.tsql.ParameterMeta[Int(4),String("int4")] :: shapeless.HNil] = doobie.tsql.UpdateI@6850a5f1
 ```
 
 If we unpack this type and rewrite the singletons to be more readable it looks like this:
@@ -107,7 +105,7 @@ Multi-parameter placeholder queries become `UpdateI`s that take multiple argumen
 
 ```scala
 scala> val up = tsql"update country set name = ? where code = ? or population > ?"
-up: doobie.tsql.UpdateI[doobie.tsql.ParameterMeta[Int(12),String("varchar")] :: doobie.tsql.ParameterMeta[Int(1),String("bpchar")] :: doobie.tsql.ParameterMeta[Int(4),String("int4")] :: shapeless.HNil] = doobie.tsql.UpdateI@11ab372f
+up: doobie.tsql.UpdateI[doobie.tsql.ParameterMeta[Int(12),String("varchar")] :: doobie.tsql.ParameterMeta[Int(1),String("bpchar")] :: doobie.tsql.ParameterMeta[Int(4),String("int4")] :: shapeless.HNil] = doobie.tsql.UpdateI@530387e1
 ```
 
 The type cleans up to be:
@@ -135,7 +133,7 @@ res8: doobie.imports.ConnectionIO[Int] = Free(...)
 
 ```scala
 scala> val q = tsql"select code, name, population from country"
-q: doobie.tsql.QueryO[doobie.tsql.ColumnMeta[Int(1),String("bpchar"),doobie.tsql.NoNulls,String("country"),String("code")] :: doobie.tsql.ColumnMeta[Int(12),String("varchar"),doobie.tsql.NoNulls,String("country"),String("name")] :: doobie.tsql.ColumnMeta[Int(4),String("int4"),doobie.tsql.NoNulls,String("country"),String("population")] :: shapeless.HNil] = doobie.tsql.QueryO@5e53fcfb
+q: doobie.tsql.QueryO[doobie.tsql.ColumnMeta[Int(1),String("bpchar"),doobie.tsql.NoNulls,String("country"),String("code")] :: doobie.tsql.ColumnMeta[Int(12),String("varchar"),doobie.tsql.NoNulls,String("country"),String("name")] :: doobie.tsql.ColumnMeta[Int(4),String("int4"),doobie.tsql.NoNulls,String("country"),String("population")] :: shapeless.HNil] = doobie.tsql.QueryO@1c5f693b
 ```
 
 Let's look at this type more closely:
@@ -156,7 +154,7 @@ So the type of `q` tells us:
 - The columns might not be nullable, which means it might be safe to map them to unlifted (i.e., non-`Option` types).
 - The columns are all from the `country` table/alias and are named `code`, `name`, and `population`, respectively.
 
-In order to use this query we can provide an output type, which specifies both the row type mapping *and* the aggregate structure. The element type can be any [nested] product type whose eventual elements have primitive mappings consistent with the `ColumnMeta` (more on this later). The aggregate type can be anything with a sensible `CanBuildFrom`, `Reducer`, or `MonadPlus`.
+In order to use this query we can provide an output type, which specifies both the row type mapping *and* the aggregate structure. The element type can be any [nested] product type whose eventual elements have primitive mappings consistent with the `ColumnMeta` (more on this later). The aggregate type can be anything with a sensible `CanBuildFrom` or `Alternative`.
 
 So a basic mapping might be a list of triples. Specifying this output type results in a `ConnectionIO` and we're done.
 
@@ -202,10 +200,10 @@ scala> tsql"select name, population from city where id = 42".option[(String, Int
 res15: doobie.imports.ConnectionIO[Option[(String, Int)]] = Free(...)
 ```
 
-And as with the current `sql` interpolator we can ask for a `Process`.
+And as with the current `sql` interpolator we can ask for a `Stream`.
 
 ```scala
-scala> tsql"select name, population from city where id = 42".process[(String, Int)]
+scala> tsql"select name, population from city where id = 42".stream[(String, Int)]
 res16: fs2.Stream[doobie.imports.ConnectionIO,(String, Int)] = Segment(Emit(Chunk(()))).flatMap(<function1>).flatMap(<function1>).flatMap(<function1>)
 ```
 

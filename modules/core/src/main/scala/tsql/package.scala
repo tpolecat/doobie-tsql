@@ -33,7 +33,7 @@ package object tsql {
       b.result()
     }
 
-  private[tsql] def liftProcess[O, A](
+  private[tsql] def liftStream[O, A](
     create: ConnectionIO[PreparedStatement],
     prep:   PreparedStatementIO[Unit],
     exec:   PreparedStatementIO[ResultSet],

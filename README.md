@@ -33,7 +33,7 @@ If you want to build and run the tests you will need to set up MySQL and Postgre
 - [x] Updates returning generated keys.
 - [x] Bulk updates.
 - [x] remove param type and nullity for ParameterMeta
-- [x] Process
+- [x] Stream
 - [ ] `in` clauses (hard, ok to punt)
 - [ ] generalized Write deriving (generic, unitary, etc.)
 - [x] array~collection read via CBF

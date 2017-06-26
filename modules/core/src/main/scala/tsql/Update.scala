@@ -38,8 +38,8 @@ class UpdateO[O](sql: String, returning: List[String], prepare: PreparedStatemen
   def as[FA](implicit rr: ReadResult[O, FA]): ConnectionIO[FA] =
     HC.prepareStatementS(sql, returning)(prepare *> exec >>= (FPS.lift(_, rr.run)))
 
-  def process[A](implicit r: Read[O, A]): Stream[ConnectionIO, A] =
-    liftProcess[O,A](FC.prepareStatement(sql, returning.toArray), prepare, exec)
+  def stream[A](implicit r: Read[O, A]): Stream[ConnectionIO, A] =
+    liftStream[O,A](FC.prepareStatement(sql, returning.toArray), prepare, exec)
 
   def unique[A](implicit r: Read[O, A]): ConnectionIO[A] =
     as(ReadResult.uniqueReadResult)

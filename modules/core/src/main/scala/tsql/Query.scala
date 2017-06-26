@@ -20,8 +20,8 @@ class QueryO[O](sql: String, prepare: PreparedStatementIO[_]) {
   def as[FA](implicit rr: ReadResult[O, FA]): ConnectionIO[FA] =
     HC.prepareStatement(sql)(prepare.flatMap(_ => HPS.executeQuery(rr.run)))
 
-  def process[A](implicit r: Read[O, A]): Stream[ConnectionIO, A] =
-    liftProcess[O,A](FC.prepareStatement(sql), prepare.void, FPS.executeQuery)
+  def stream[A](implicit r: Read[O, A]): Stream[ConnectionIO, A] =
+    liftStream[O,A](FC.prepareStatement(sql), prepare.void, FPS.executeQuery)
 
   def unique[A](implicit r: Read[O, A]): ConnectionIO[A] =
     as(ReadResult.uniqueReadResult)
