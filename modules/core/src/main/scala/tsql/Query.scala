@@ -2,7 +2,8 @@ package doobie.tsql
 
 import shapeless.{ HList, ProductArgs }
 import doobie.imports._
-import scalaz._, Scalaz._, scalaz.stream.Process
+import cats.implicits._
+import fs2.Stream
 
 class QueryIO[I,O](sql: String) extends ProductArgs {
 
@@ -12,14 +13,14 @@ class QueryIO[I,O](sql: String) extends ProductArgs {
 }
 
 class QueryO[O](sql: String, prepare: PreparedStatementIO[_]) {
-  
+
   def this(sql: String) =
-    this(sql, ().point[PreparedStatementIO])
+    this(sql, ().pure[PreparedStatementIO])
 
   def as[FA](implicit rr: ReadResult[O, FA]): ConnectionIO[FA] =
     HC.prepareStatement(sql)(prepare.flatMap(_ => HPS.executeQuery(rr.run)))
 
-  def process[A](implicit r: Read[O, A]): Process[ConnectionIO, A] =
+  def process[A](implicit r: Read[O, A]): Stream[ConnectionIO, A] =
     liftProcess[O,A](FC.prepareStatement(sql), prepare.void, FPS.executeQuery)
 
   def unique[A](implicit r: Read[O, A]): ConnectionIO[A] =
@@ -29,4 +30,3 @@ class QueryO[O](sql: String, prepare: PreparedStatementIO[_]) {
     as(ReadResult.optionReadResult)
 
 }
-

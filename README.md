@@ -1,14 +1,24 @@
 # doobie-tsql
 
-Compile-time checked SQL literals with fancy inferred types. For **doobie**.
+Compile-time checked SQL literals for **[doobie]()** with fancy inferred types.
 
-This is a **prototype** that I would like it to be included as an add-on for 0.3, and subsume the existing high-level API in 0.4.
+This is a prototype that works with **doobie 0.4.2-SNAPSHOT** for **Cats** on **Scala 2.12**. There is a snapshot release on Sonatype that you can use thus:
+
+```scala
+resolvers in ThisBuild +=
+  "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+
+libraryDependencies ++= Seq(
+  "org.tpolecat" %% "doobie-tsql"          % "0.2-SNAPSHOT",
+  "org.tpolecat" %% "doobie-tsql-postgres" % "0.2-SNAPSHOT" // optional, for array type mappings and some other things
+)
+```
 
 The high points:
 
-- @tpolecat wrote a macro! But all it does is infer types so it doesn't really count.
 - The new `tsql` interpolator checks statements against the live schema at compile-time and infers fancy types that allow fine-grained type mappings that can be constrained based on schema-specific types or even table/column names.
 - The new `Read` and `Write` typeclasses subsume the `Meta/Atom/Composite` stack. The design is more general and much simpler.
+- Some rough edges and basically no doc yet. Sorry.
 
 See the [**EXAMPLE**](EXAMPLE.md) for much more information.
 

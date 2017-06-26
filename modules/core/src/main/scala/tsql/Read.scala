@@ -3,7 +3,7 @@ package doobie.tsql
 import doobie.imports.{ FRS, ResultSetIO }
 import java.sql.ResultSet
 import shapeless.{ HNil, HList, ::, Lazy, Generic, <:!<, =:!= }
-import scalaz.Coyoneda
+import cats.free.Coyoneda
 import JdbcType._
 import scala.collection.generic.CanBuildFrom
 
