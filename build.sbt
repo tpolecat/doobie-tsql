@@ -9,6 +9,8 @@ lazy val macroCompatVersion   = "1.1.1"
 lazy val mySqlVersion         = "6.0.2"
 lazy val catsVersion          = "0.9.0"
 
+version in ThisBuild := "0.2-SNAPSHOT"
+
 resolvers in ThisBuild +=
   "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
