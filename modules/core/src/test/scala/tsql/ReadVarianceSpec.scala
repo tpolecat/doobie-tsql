@@ -1,20 +1,18 @@
 package doobie.tsql
 
 import JdbcType._
-import java.sql.ResultSet
-import scalaz._, Scalaz._
-import shapeless.{ Witness => W , _}
+import shapeless._
 import shapeless.test._
 import org.specs2.mutable.Specification
 
 object ReadVarianceSpec extends Specification {
 
-  type Blah = W.`"blah"`.T
+  type Blah = "blah"
 
   "variance for default broad Read instances" should {
 
     "allow reading of narrower schema types, but not wider schema types" in {
-      type T[S <: String] = Read[ColumnMeta[JdbcInteger, S, NoNulls, String, String], Int] 
+      type T[S <: String] = Read[ColumnMeta[JdbcInteger, S, NoNulls, String, String], Int]
                 implicitly[T[String]]   // provided
                 implicitly[T[Blah  ]]   // refined
       illTyped("implicitly[T[Any   ]]") // generalized
@@ -53,7 +51,7 @@ object ReadVarianceSpec extends Specification {
       implicitly[T[NullableUnknown]] // refined
       true
     }
-  
+
   }
 
 }

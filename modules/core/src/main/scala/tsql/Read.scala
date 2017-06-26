@@ -1,16 +1,15 @@
-package doobie.tsql 
+package doobie.tsql
 
 import doobie.imports.{ FRS, ResultSetIO }
 import java.sql.ResultSet
-import shapeless.{ HNil, HList, ::, Lazy, Generic, <:!<, =:!=, Witness => W}
-import shapeless.ops.hlist.Prepend
+import shapeless.{ HNil, HList, ::, Lazy, Generic, <:!<, =:!= }
 import scalaz.Coyoneda
 import JdbcType._
 import scala.collection.generic.CanBuildFrom
 
-/** 
+/**
  * Witness that we can read a column value of type `A` while satisfying constraints `O` or any
- * more specific constraint. 
+ * more specific constraint.
  */
 final class Read[+O, A](val run: Coyoneda[(ResultSet, Int) => ?, A]) {
 
@@ -48,7 +47,7 @@ object Read extends ReadInstances with ReadDerivations {
     def toColumn [CC <: C] = asInstanceOf[refine[ J,  S,  N,  T, CC,  A]]
   }
 
-  /** 
+  /**
    * Construct a single-column Read for a given Array element type. Note that this is implemented
    * as a blind cast from `Object to `Array[A]`; success will depend on the vendor's encoding. No
    * instances are provided by default.
@@ -135,7 +134,7 @@ trait ReadDerivations extends ReadDerivations1 {
   implicit def hcons[MH, H, MT <: HList, T <: HList](
     implicit h: Read[MH, H],
              t: Lazy[Read[MT, T]]
-  ): Read[MH :: MT, H :: T] = 
+  ): Read[MH :: MT, H :: T] =
     Read.lift((rs, n) => h.unsafeGet(rs, n) :: t.value.unsafeGet(rs, n + 1))
 
 }
@@ -148,7 +147,7 @@ trait ReadDerivations1 extends ReadDerivations2 {
     implicit g: Generic.Aux[H, HG],
              p: Concat.Aux[HG, T, A],
              r: Read[O, A]
-  ): Read[O, H :: T] = 
+  ): Read[O, H :: T] =
     Read.lift { (rs, n) =>
       val (hg, t) = p.unapply(r.unsafeGet(rs, n))
       g.from(hg) :: t
@@ -167,7 +166,7 @@ trait ReadDerivations1 extends ReadDerivations2 {
 trait ReadDerivations2 {
 
   implicit def readGeneric[O, A, B](
-    implicit g: Generic.Aux[A, B], 
+    implicit g: Generic.Aux[A, B],
              r: Lazy[Read[O, B]]
    ): Read[O, A] =
     Read.lift((rs, n) => g.from(r.value.unsafeGet(rs, n)))

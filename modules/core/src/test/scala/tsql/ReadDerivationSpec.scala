@@ -1,10 +1,7 @@
 package doobie.tsql
 
 import JdbcType._
-import java.sql.ResultSet
-import scalaz._, Scalaz._
-import shapeless.{ Witness => W , _}
-import shapeless.test._
+import shapeless._
 import org.specs2.mutable.Specification
 
 object ReadDerivationSpec extends Specification {
