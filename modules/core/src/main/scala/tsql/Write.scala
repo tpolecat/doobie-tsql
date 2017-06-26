@@ -3,10 +3,29 @@ package doobie.tsql
 import doobie.imports.{ FPS, PreparedStatementIO }
 import java.sql.PreparedStatement
 import shapeless.{ HNil, HList, ::, Lazy, Generic, =:!=, <:!<, Witness }
-import scalaz.ContravariantCoyoneda
 import JdbcType._
 
 import scala.annotation.unchecked.uncheckedVariance
+
+sealed trait ContravariantCoyoneda[F[_], A] { outer =>
+  type I
+  val fi: F[I]
+  val k: A => I
+  def contramap[B](f: B => A): ContravariantCoyoneda[F, B] =
+    new ContravariantCoyoneda[F, B]{
+      type I = outer.I
+      val fi = outer.fi
+      val k = f andThen outer.k
+    }
+}
+object ContravariantCoyoneda {
+  def lift[F[_], A](fa: F[A]): ContravariantCoyoneda[F, A] =
+    new ContravariantCoyoneda[F, A] {
+      type I = A
+      val fi = fa
+      val k  = a => a
+    }
+}
 
 final class Write[+I, -A](val run: ContravariantCoyoneda[(PreparedStatement, Int, ?) => Unit, A @uncheckedVariance]) {
 

@@ -2,9 +2,10 @@ package doobie
 
 import doobie.imports._
 import java.sql.{ PreparedStatement, ResultSet }
-import scalaz._, Scalaz._
-import scalaz.stream._
-import scalaz.stream.Process.{ eval, eval_, bracket }
+// import doobie.util.process.repeatEvalChunks
+import fs2.Stream
+import fs2.Stream. { eval, bracket }
+import cats.implicits._
 
 package object tsql {
 
@@ -18,27 +19,26 @@ package object tsql {
     chunkSize: Int = 512
   )(
     implicit ev: Read[O, A]
-  ): Process[ConnectionIO, A] = {
+  ): Stream[ConnectionIO, A] = {
 
-    def prepared(ps: PreparedStatement): Process[ConnectionIO, PreparedStatement] =
+    def prepared(ps: PreparedStatement): Stream[ConnectionIO, PreparedStatement] =
       eval[ConnectionIO, PreparedStatement] {
         val fs = HPS.setFetchSize(chunkSize)
-        FC.embed(ps, fs >> prep).map(_ => ps)
+        FC.lift(ps, fs *> prep).map(_ => ps)
       }
 
-    def unrolled(rs: ResultSet): Process[ConnectionIO, A] =
+    def unrolled(rs: ResultSet): Stream[ConnectionIO, A] =
       ???
-      // repeatEvalChunks(FC.embed(rs, HRS.getNextChunk[A](chunkSize)))
+      // repeatEvalChunks(FC.lift(rs, HRS.getNextChunk[A](chunkSize)))
 
-    val preparedStatement: Process[ConnectionIO, PreparedStatement] =
-      bracket(create)(ps => eval_(FC.embed(ps, FPS.close)))(prepared)
+    val preparedStatement: Stream[ConnectionIO, PreparedStatement] =
+      bracket(create)(prepared, FC.lift(_, FPS.close))
 
-    def results(ps: PreparedStatement): Process[ConnectionIO, A] =
-      bracket(FC.embed(ps, exec))(rs => eval_(FC.embed(rs, FRS.close)))(unrolled)
+    def results(ps: PreparedStatement): Stream[ConnectionIO, A] =
+      bracket(FC.lift(ps, exec))(unrolled, FC.lift(_, FRS.close))
 
     preparedStatement.flatMap(results)
 
   }
-
 
 }

@@ -5,7 +5,8 @@ import scala.reflect.macros.whitebox.Context
 import shapeless.{ HNil, ProductArgs }
 import macrocompat.bundle
 import doobie.imports._
-import scalaz._, Scalaz._, scalaz.effect.IO
+import fs2.interop.cats._
+import cats.implicits._
 import java.sql.ResultSetMetaData._
 
 object TSql {
@@ -58,12 +59,12 @@ object TSql {
     }
 
     /** Get a Transactor[IO] from macro settings. */
-    def xa: Transactor[IO, _] = {
+    def xa: Transactor[IOLite, _] = {
       val driver   = settingOrFail("driver",   "org.h2.Driver")
       val connect  = settingOrFail("connect",  "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1")
       val user     = settingOrFail("user",     "bobDole")
       val password = settingOrFail("password", "banana // or leave empty")
-      DriverManagerTransactor[IO](driver, connect, user, password)
+      DriverManagerTransactor[IOLite](driver, connect, user, password)
     }
 
     /** Pack a list of types into an `HList`. */
@@ -113,7 +114,7 @@ object TSql {
             |  > ${e.getMessage}
             """.stripMargin)
 
-          } else (AnyType, -1).point[PreparedStatementIO]
+          } else (AnyType, -1).pure[PreparedStatementIO]
 
       }
 
@@ -176,15 +177,15 @@ object TSql {
 
       // Get column and parameter metadata. Note that preparing the statement with `returning`
       // columns doesn't do anything; they don't appear in metadata for some reason.
-      val prog = HC.prepareStatement(sql)(parameterConstraint tuple columnConstraint)
+      val prog = HC.prepareStatement(sql)(parameterConstraint product columnConstraint)
       val ((it, pcount), ot) = prog.transact(xa).attemptSql.unsafePerformIO match {
-        case -\/(e) => //c.abort(c.enclosingPosition, e.getMessage)
+        case Left(e) => //c.abort(c.enclosingPosition, e.getMessage)
           val pos = parts.head.pos
           SqlExceptions.pos(e.getMessage) match {
             case Some((s, n)) => c.abort(sqlPos(n).getOrElse(pos), s)
             case None         => c.abort(pos, e.getMessage)
           }
-        case \/-(d) => d
+        case Right(d) => d
       }
 
       // TODO: get rid of repetition of the it =:= HNil cases.

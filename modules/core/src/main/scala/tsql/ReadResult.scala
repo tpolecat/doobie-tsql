@@ -3,7 +3,7 @@ package doobie.tsql
 import doobie.imports.{ FRS, ResultSetIO }
 import java.sql.ResultSet
 import scala.collection.generic.CanBuildFrom
-import scalaz._
+import cats.Alternative
 
 /**
  * Typeclass witnessing that a `ResultSet` can be read and accumulated into some type `A` under
@@ -81,40 +81,21 @@ object ReadResult extends ReadResultInstances1 {
 
 }
 
-trait ReadResultInstances1 extends ReadResultInstances2 { this: ReadResult.type =>
+trait ReadResultInstances1 { this: ReadResult.type =>
 
   /**
    * If we can read a row into A under constraint `O` we can read all remaining rows into a
-   * MonadPlus.
+   * Alternative.
    */
-  implicit def MonadPlusReadResult[M[_], O, A](
+  implicit def AlternativeReadResult[M[_], O, A](
     implicit r: Read[O, A],
-             m: MonadPlus[M]
+             m: Alternative[M]
   ): ReadResult[O, M[A]] =
     raw { rs =>
       var ma = m.empty[A]
       while (rs.next)
-        ma = m.plus(ma, m.point(r.unsafeGet(rs, 1)))
+        ma = m.combineK(ma, m.pure(r.unsafeGet(rs, 1)))
       ma
-    }
-
-}
-
-trait ReadResultInstances2 { this: ReadResult.type =>
-
-  /**
-   * If we can read a row into A under constraint `O` and reduce many As to FA we can read all rows
-   * into FA.
-   */
-  implicit def ReducerReadResult[FA, O, A](
-    implicit r: Read[O, A],
-             x: Reducer[A, FA]
-  ): ReadResult[O, FA] =
-    raw { rs =>
-      var fa = x.zero
-      while (rs.next)
-        fa = x.snoc(fa, r.unsafeGet(rs, 1))
-      fa
     }
 
 }

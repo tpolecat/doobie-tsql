@@ -1,4 +1,5 @@
 // Library versions all in one place, for convenience and sanity.
+lazy val ammoniteVersion      = "1.0.0-RC9"
 lazy val scalaCheckVersion    = "1.13.4"
 lazy val specs2Version        = "3.8.6"
 lazy val kindProjectorVersion = "0.9.3"
@@ -6,6 +7,7 @@ lazy val paradiseVersion      = "2.1.0"
 lazy val doobieVersion        = "0.4.2-SNAPSHOT"
 lazy val macroCompatVersion   = "1.1.1"
 lazy val mySqlVersion         = "6.0.2"
+lazy val catsVersion          = "0.9.0"
 
 resolvers in ThisBuild +=
   "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
@@ -92,10 +94,11 @@ lazy val core = project.in(file("modules/core"))
   .settings(
     name := "doobie-tsql-core",
     libraryDependencies ++= Seq(
-      scalaOrganization.value % "scala-reflect"  % scalaVersion.value,
-      scalaOrganization.value % "scala-compiler" % scalaVersion.value,
-      "org.typelevel"        %% "macro-compat"   % macroCompatVersion,
-      "org.tpolecat"         %% "doobie-core"    % doobieVersion
+      scalaOrganization.value % "scala-reflect"    % scalaVersion.value,
+      scalaOrganization.value % "scala-compiler"   % scalaVersion.value,
+      "org.typelevel"        %% "macro-compat"     % macroCompatVersion,
+      "org.typelevel"        %% "cats"             % catsVersion,
+      "org.tpolecat"         %% "doobie-core-cats" % doobieVersion
     ),
     addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.patch)
   )
@@ -115,8 +118,7 @@ lazy val postgres = project.in(file("modules/postgres"))
       "org.tpolecat"  %% "doobie-postgres" % doobieVersion
     ),
     initialCommands := """
-      |import scalaz._,Scalaz._
-      |import scalaz.concurrent.Task
+      |import cats._, cats.implicits._
       |import doobie.imports._
       |import doobie.postgresql.pgtypes._
       |val xa: Transactor[Task] = DriverManagerTransactor[Task]("org.postgresql.Driver", "jdbc:postgresql:world", "postgres", "")
@@ -144,10 +146,10 @@ lazy val h2 = project.in(file("modules/h2"))
       "-Xmacro-settings:doobie.password="
     ),
     libraryDependencies ++= Seq(
-      "org.tpolecat"  %% "doobie-h2" % doobieVersion
+      "org.tpolecat"  %% "doobie-h2-cats" % doobieVersion
     ),
     initialCommands := s"""
-      |import doobie.tsql._, doobie.tsql.amm._, scalaz._, Scalaz._, doobie.imports._, shapeless._
+      |import doobie.tsql._, doobie.tsql.amm._, cats._, cats.implicits._, doobie.imports._, shapeless._
       |""".stripMargin
   )
   .dependsOn(core)
@@ -168,7 +170,7 @@ lazy val mysql = project.in(file("modules/mysql"))
       "mysql" % "mysql-connector-java" % mySqlVersion
     ),
     initialCommands := s"""
-      |import doobie.tsql._, doobie.tsql.amm._, scalaz._, Scalaz._, doobie.imports._, shapeless._
+      |import doobie.tsql._, doobie.tsql.amm._, cats._, cats.implicits._, doobie.imports._, shapeless._
       |""".stripMargin
   )
   .dependsOn(core)
@@ -191,7 +193,7 @@ lazy val docs = project.in(file("modules/docs"))
       "-Ywarn-unused:imports"
     ))),
     libraryDependencies ++= Seq(
-      "org.tpolecat"  %% "doobie-postgres" % doobieVersion
+      "org.tpolecat"  %% "doobie-postgres-cats" % doobieVersion
     ),
     tutTargetDirectory := (baseDirectory in root).value,
     tut := {
@@ -209,5 +211,5 @@ lazy val ammonite = project.in(file("modules/ammonite"))
   .settings(commonSettings)
   .settings(
     name := "doobie-tsql-ammonite",
-    libraryDependencies += "com.lihaoyi" % "ammonite-repl" % "1.0.0-RC9" cross CrossVersion.patch
+    libraryDependencies += "com.lihaoyi" % "ammonite-repl" % ammoniteVersion cross CrossVersion.patch
   )
