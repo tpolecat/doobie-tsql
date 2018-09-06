@@ -9,7 +9,7 @@ resolvers in ThisBuild +=
   "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
 libraryDependencies ++= Seq(
-  "org.tpolecat" %% "doobie-tsql"          % "0.2-SNAPSHOT",
+  "org.tpolecat" %% "doobie-tsql-core"          % "0.2-SNAPSHOT",
   "org.tpolecat" %% "doobie-tsql-postgres" % "0.2-SNAPSHOT" // optional, for array type mappings and some other things
 )
 ```
